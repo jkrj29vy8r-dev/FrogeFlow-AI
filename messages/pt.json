@@ -1,0 +1,435 @@
+{
+  "common": {
+    "appName": "BookForge AI",
+    "tagline": "Create digital products with AI",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "error": "Something went wrong. Please try again.",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "save": "Save",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "submit": "Submit",
+    "continue": "Continue",
+    "or": "or",
+    "and": "and",
+    "free": "Free",
+    "new": "New",
+    "preview": "Preview",
+    "download": "Download",
+    "copy": "Copy",
+    "share": "Share",
+    "create": "Create",
+    "generate": "Generate",
+    "export": "Export",
+    "upgrade": "Upgrade",
+    "learnMore": "Learn more",
+    "getStarted": "Get started",
+    "getStartedFree": "Get started free",
+    "noCardRequired": "No credit card required"
+  },
+  "nav": {
+    "features": "Features",
+    "products": "Products",
+    "pricing": "Pricing",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "dashboard": "Dashboard",
+    "documents": "Documents",
+    "settings": "Settings",
+    "billing": "Billing",
+    "signOut": "Sign out",
+    "toggleMenu": "Toggle menu"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Powered by advanced AI",
+      "headline": "Create digital products",
+      "headlineHighlight": "in minutes",
+      "subheadline": "BookForge AI transforms your ideas into polished eBooks, guides, workbooks, and marketing content — structured, editable, and ready to sell.",
+      "cta": "Start creating for free",
+      "ctaSecondary": "See how it works",
+      "socialProof": "No credit card required · 3 free documents per month"
+    },
+    "features": {
+      "headline": "Everything you need to create and sell",
+      "subheadline": "BookForge AI is built for creators who want to move fast without sacrificing quality.",
+      "items": {
+        "aiGeneration": {
+          "title": "AI-Powered Generation",
+          "description": "Describe your topic and let AI create structured, professional content instantly."
+        },
+        "editable": {
+          "title": "Fully Editable",
+          "description": "Every generated section is editable. Refine tone, add details, restructure freely."
+        },
+        "multipleFormats": {
+          "title": "Multiple Formats",
+          "description": "eBooks, workbooks, checklists, lead magnets, sales pages — one platform."
+        },
+        "exportAnywhere": {
+          "title": "Export Anywhere",
+          "description": "Export as PDF, HTML, or structured data. Ready for Gumroad, Shopify, or your own store."
+        },
+        "blazingFast": {
+          "title": "Blazing Fast",
+          "description": "Generate a complete 30-page guide in under 2 minutes. No waiting, no friction."
+        },
+        "secure": {
+          "title": "Your Content, Secured",
+          "description": "All documents are private by default. Row-level security ensures only you see your work."
+        }
+      }
+    },
+    "productTypes": {
+      "headline": "One platform. Every digital product.",
+      "subheadline": "From lead magnets to full eBooks — create any digital product your audience needs.",
+      "ebook": "eBooks",
+      "pdfGuide": "PDF Guides",
+      "workbook": "Workbooks",
+      "checklist": "Checklists",
+      "leadMagnet": "Lead Magnets",
+      "landingPage": "Landing Pages",
+      "salesPage": "Sales Pages",
+      "emailCampaign": "Email Campaigns"
+    },
+    "cta": {
+      "headline": "Ready to build your first digital product?",
+      "subheadline": "Join creators worldwide using BookForge AI to launch digital products faster than ever before.",
+      "button": "Start for free",
+      "footnote": "Free plan · No credit card · Cancel anytime"
+    }
+  },
+  "footer": {
+    "description": "The AI platform for creating professional digital products.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "links": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "changelog": "Changelog",
+      "about": "About",
+      "blog": "Blog",
+      "contact": "Contact",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    },
+    "copyright": "© {year} BookForge AI. All rights reserved."
+  },
+  "auth": {
+    "signIn": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your BookForge AI account",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Sign up free",
+      "errors": {
+        "invalidCredentials": "Invalid email or password",
+        "generic": "An error occurred. Please try again."
+      }
+    },
+    "signUp": {
+      "title": "Create your account",
+      "subtitle": "Start building digital products with AI",
+      "fullNameLabel": "Full name",
+      "fullNamePlaceholder": "Jane Smith",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Min. 8 characters",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "terms": "By creating an account you agree to our {terms} and {privacy}.",
+      "termsLink": "Terms",
+      "privacyLink": "Privacy Policy",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "success": {
+        "title": "Check your email",
+        "message": "Account created! Please check your email to confirm your account."
+      }
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send you a reset link.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "backToSignIn": "Back to sign in",
+      "success": "Check your email for a password reset link."
+    }
+  },
+  "dashboard": {
+    "greeting": "Good morning, {name}",
+    "subtitle": "What would you like to create today?",
+    "newDocument": "New document",
+    "stats": {
+      "documents": "Documents",
+      "creditsUsed": "AI Credits Used",
+      "wordsGenerated": "Words Generated"
+    },
+    "quickCreate": {
+      "title": "Quick create",
+      "ebook": "eBook",
+      "pdfGuide": "PDF Guide",
+      "checklist": "Checklist"
+    },
+    "recentDocuments": {
+      "title": "Recent documents",
+      "empty": {
+        "title": "No documents yet",
+        "subtitle": "Create your first document to get started.",
+        "cta": "Create document"
+      }
+    }
+  },
+  "projects": {
+    "status": {
+      "draft": "Draft",
+      "outlineReady": "Outline ready",
+      "generating": "Generating",
+      "ready": "Ready",
+      "error": "Error",
+      "archived": "Archived"
+    },
+    "types": {
+      "ebook": "eBook",
+      "pdfGuide": "PDF Guide",
+      "leadMagnet": "Lead Magnet",
+      "workbook": "Workbook",
+      "checklist": "Checklist",
+      "landingPage": "Landing Page",
+      "salesPage": "Sales Page",
+      "productDescription": "Product Description",
+      "marketingContent": "Marketing Content",
+      "socialPost": "Social Post",
+      "emailCampaign": "Email Campaign"
+    },
+    "create": {
+      "title": "Create a new document",
+      "step1": {
+        "title": "Choose a product type",
+        "subtitle": "What would you like to create?"
+      },
+      "step2": {
+        "title": "Define your product",
+        "subtitle": "Tell us about your idea.",
+        "topicLabel": "Topic or idea",
+        "topicPlaceholder": "e.g. A guide on intermittent fasting for busy professionals",
+        "audienceLabel": "Target audience",
+        "audiencePlaceholder": "e.g. Busy professionals aged 30–50",
+        "toneLabel": "Tone",
+        "tones": {
+          "professional": "Professional",
+          "conversational": "Conversational",
+          "authoritative": "Authoritative",
+          "motivational": "Motivational"
+        },
+        "lengthLabel": "Length",
+        "lengths": {
+          "short": "Short (~5 pages)",
+          "medium": "Medium (~15 pages)",
+          "long": "Long (~30 pages)"
+        }
+      },
+      "step3": {
+        "title": "Review & generate",
+        "subtitle": "Ready to create your document?",
+        "estimatedTime": "Estimated time: ~2 minutes",
+        "generateOutline": "Generate outline"
+      }
+    },
+    "delete": {
+      "title": "Delete document",
+      "description": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+      "confirm": "Yes, delete",
+      "cancel": "Cancel"
+    }
+  },
+  "editor": {
+    "toolbar": {
+      "save": "Save",
+      "preview": "Preview",
+      "export": "Export"
+    },
+    "sections": {
+      "addSection": "Add section",
+      "regenerate": "Regenerate",
+      "regenerateWithInstruction": "Regenerate with instruction",
+      "customInstruction": "Custom instruction",
+      "customInstructionPlaceholder": "e.g. Make it more concise and add a real-world example",
+      "delete": "Delete section",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "aiSidebar": {
+      "title": "AI Assistant",
+      "rewrite": "Rewrite this section",
+      "makeShorter": "Make it shorter",
+      "makeLonger": "Make it longer",
+      "changeTone": "Change tone",
+      "customInstruction": "Custom instruction",
+      "placeholder": "Tell the AI how to improve this section…",
+      "apply": "Apply"
+    },
+    "autoSave": {
+      "saved": "Saved",
+      "saving": "Saving…",
+      "unsaved": "Unsaved changes"
+    }
+  },
+  "generation": {
+    "outline": {
+      "title": "Your document outline",
+      "subtitle": "Review and edit the structure before generating content.",
+      "approve": "Generate content",
+      "startOver": "Start over",
+      "addSection": "Add section",
+      "editTitle": "Edit title"
+    },
+    "progress": {
+      "title": "Generating your document…",
+      "subtitle": "Please don't close this tab.",
+      "sectionProgress": "Section {current} of {total}",
+      "estimatedTime": "Estimated time remaining: {time}"
+    }
+  },
+  "export": {
+    "title": "Export document",
+    "format": "Format",
+    "formats": {
+      "pdf": "PDF Document"
+    },
+    "cover": "Cover style",
+    "covers": {
+      "minimal": "Minimal",
+      "bold": "Bold",
+      "gradient": "Gradient",
+      "professional": "Professional"
+    },
+    "watermark": {
+      "notice": "Free plan exports include a BookForge AI watermark.",
+      "upgrade": "Upgrade to Pro to remove it."
+    },
+    "generate": "Generate export",
+    "generating": "Generating…",
+    "download": "Download PDF",
+    "success": "Your export is ready.",
+    "error": "Export failed. Please try again."
+  },
+  "billing": {
+    "currentPlan": "Current plan",
+    "renewsOn": "Renews on {date}",
+    "usage": {
+      "title": "Usage this period",
+      "documents": "{count} documents generated",
+      "credits": "{used} of {total} credits used"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "$0",
+        "period": "forever",
+        "features": [
+          "1 document per month",
+          "Watermarked exports",
+          "3 AI credits",
+          "PDF export"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "$29",
+        "period": "per month",
+        "features": [
+          "Unlimited documents",
+          "No watermark",
+          "100 AI credits per month",
+          "PDF export",
+          "Priority generation",
+          "All product types"
+        ]
+      },
+      "agency": {
+        "name": "Agency",
+        "price": "$99",
+        "period": "per month",
+        "features": [
+          "Everything in Pro",
+          "500 AI credits per month",
+          "3 team members",
+          "White-label exports",
+          "API access",
+          "Priority support"
+        ]
+      }
+    },
+    "upgrade": "Upgrade plan",
+    "manage": "Manage subscription",
+    "invoices": {
+      "title": "Payment history",
+      "empty": "No invoices yet.",
+      "download": "Download"
+    },
+    "cancelNotice": "You can cancel anytime. Your access continues until the end of the billing period."
+  },
+  "settings": {
+    "profile": {
+      "title": "Profile",
+      "subtitle": "Update your personal information.",
+      "fullName": "Full name",
+      "email": "Email address",
+      "emailReadOnly": "Contact support to change your email.",
+      "avatar": "Profile photo",
+      "save": "Save changes",
+      "saved": "Profile updated."
+    },
+    "danger": {
+      "title": "Danger zone",
+      "deleteAccount": "Delete account",
+      "deleteDescription": "Permanently delete your account and all your data. This action cannot be undone.",
+      "deleteConfirmPrompt": "Type DELETE to confirm",
+      "deleteConfirmPlaceholder": "DELETE",
+      "deleteSubmit": "Permanently delete account"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "subtitle": "The page you're looking for doesn't exist.",
+      "cta": "Go home"
+    },
+    "serverError": {
+      "title": "Something went wrong",
+      "subtitle": "An unexpected error occurred. We've been notified.",
+      "retry": "Try again"
+    },
+    "unauthorized": {
+      "title": "Access denied",
+      "subtitle": "You don't have permission to view this page."
+    },
+    "creditsExhausted": {
+      "title": "No credits remaining",
+      "subtitle": "Upgrade to Pro to continue generating content.",
+      "cta": "Upgrade now"
+    }
+  },
+  "credits": {
+    "remaining": "{count} credits remaining",
+    "low": "Running low on credits",
+    "exhausted": "No credits remaining"
+  }
+}

@@ -1,11 +1,14 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { BookOpen } from "lucide-react";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = await getTranslations("common");
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
@@ -14,7 +17,7 @@ export default function AuthLayout({
           <BookOpen className="h-5 w-5 text-white" />
         </div>
         <span className="text-lg text-[hsl(var(--foreground))]">
-          BookForge AI
+          {t("appName")}
         </span>
       </Link>
 

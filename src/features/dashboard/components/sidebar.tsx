@@ -1,21 +1,30 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { BookOpen, LayoutDashboard, Settings, FileText, CreditCard, LogOut } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
+import {
+  BookOpen,
+  LayoutDashboard,
+  Settings,
+  FileText,
+  CreditCard,
+  LogOut,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/features/auth/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Documents", href: "/dashboard/documents", icon: FileText },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Billing", href: "/billing", icon: CreditCard },
-] as const;
-
 export function Sidebar() {
+  const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
+
+  const navItems = [
+    { label: t("dashboard"), href: "/dashboard" as const, icon: LayoutDashboard },
+    { label: t("documents"), href: "/dashboard/documents" as const, icon: FileText },
+    { label: t("settings"), href: "/settings" as const, icon: Settings },
+    { label: t("billing"), href: "/billing" as const, icon: CreditCard },
+  ];
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]">
@@ -25,13 +34,13 @@ export function Sidebar() {
           <BookOpen className="h-4 w-4 text-white" />
         </div>
         <span className="text-sm text-[hsl(var(--foreground))]">
-          BookForge AI
+          {tCommon("appName")}
         </span>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 space-y-1 p-3">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === "/dashboard"
@@ -66,7 +75,7 @@ export function Sidebar() {
             className="w-full justify-start gap-3 text-[hsl(var(--muted-foreground))]"
           >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {t("signOut")}
           </Button>
         </form>
       </div>

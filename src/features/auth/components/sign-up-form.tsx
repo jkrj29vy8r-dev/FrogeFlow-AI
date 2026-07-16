@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 const initialState = { error: undefined, success: undefined };
 
 export function SignUpForm() {
+  const t = useTranslations("auth.signUp");
   const [state, formAction, isPending] = useActionState(signUp, initialState);
 
   if (state?.success) {
@@ -20,10 +22,10 @@ export function SignUpForm() {
           <CheckCircle2 className="h-12 w-12 text-[hsl(var(--primary))]" />
         </div>
         <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-          Check your email
+          {t("success.title")}
         </h2>
         <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-          {state.success}
+          {t("success.message")}
         </p>
       </div>
     );
@@ -33,22 +35,22 @@ export function SignUpForm() {
     <div>
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">
-          Create your account
+          {t("title")}
         </h1>
         <p className="mt-1.5 text-sm text-[hsl(var(--muted-foreground))]">
-          Start building digital products with AI
+          {t("subtitle")}
         </p>
       </div>
 
       <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm">
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full name</Label>
+            <Label htmlFor="fullName">{t("fullNameLabel")}</Label>
             <Input
               id="fullName"
               name="fullName"
               type="text"
-              placeholder="Jane Smith"
+              placeholder={t("fullNamePlaceholder")}
               autoComplete="name"
               required
               disabled={isPending}
@@ -56,12 +58,12 @@ export function SignUpForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("emailLabel")}</Label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("emailPlaceholder")}
               autoComplete="email"
               required
               disabled={isPending}
@@ -69,12 +71,12 @@ export function SignUpForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("passwordLabel")}</Label>
             <Input
               id="password"
               name="password"
               type="password"
-              placeholder="Min. 8 characters"
+              placeholder={t("passwordPlaceholder")}
               autoComplete="new-password"
               required
               disabled={isPending}
@@ -89,30 +91,33 @@ export function SignUpForm() {
 
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isPending ? "Creating account…" : "Create account"}
+            {isPending ? t("submitting") : t("submit")}
           </Button>
 
           <p className="text-center text-xs text-[hsl(var(--muted-foreground))]">
-            By creating an account you agree to our{" "}
-            <Link href="/terms" className="hover:underline">
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="hover:underline">
-              Privacy Policy
-            </Link>
-            .
+            {t.rich("terms", {
+              terms: (chunks) => (
+                <Link href="/terms" className="hover:underline">
+                  {chunks}
+                </Link>
+              ),
+              privacy: (chunks) => (
+                <Link href="/privacy" className="hover:underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </form>
       </div>
 
       <p className="mt-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-        Already have an account?{" "}
+        {t("hasAccount")}{" "}
         <Link
           href="/sign-in"
           className="font-medium text-[hsl(var(--primary))] hover:underline"
         >
-          Sign in
+          {t("signInLink")}
         </Link>
       </p>
     </div>
