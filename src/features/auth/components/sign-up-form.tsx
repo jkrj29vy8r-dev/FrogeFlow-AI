@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUp } from "@/features/auth/actions/auth.actions";
+import { OAuthButton } from "@/features/auth/components/oauth-button";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
 const initialState = { error: undefined, success: undefined };
@@ -43,6 +44,18 @@ export function SignUpForm() {
       </div>
 
       <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm">
+        {/* OAuth providers */}
+        <div className="space-y-2">
+          <OAuthButton provider="google" label="Sign up with Google" />
+          <OAuthButton provider="github" label="Sign up with GitHub" />
+        </div>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[hsl(var(--border))]" />
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">or</span>
+          <div className="h-px flex-1 bg-[hsl(var(--border))]" />
+        </div>
+
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">{t("fullNameLabel")}</Label>

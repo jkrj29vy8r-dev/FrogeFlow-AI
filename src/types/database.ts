@@ -16,6 +16,10 @@ export interface Database {
           email: string;
           full_name: string | null;
           avatar_url: string | null;
+          username: string | null;
+          language: string;
+          timezone: string;
+          last_login: string | null;
           plan: PlanType;
           credits: number;
           created_at: string;
@@ -26,6 +30,10 @@ export interface Database {
           email: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          username?: string | null;
+          language?: string;
+          timezone?: string;
+          last_login?: string | null;
           plan?: PlanType;
           credits?: number;
           created_at?: string;
@@ -36,6 +44,10 @@ export interface Database {
           email?: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          username?: string | null;
+          language?: string;
+          timezone?: string;
+          last_login?: string | null;
           plan?: PlanType;
           credits?: number;
           updated_at?: string;

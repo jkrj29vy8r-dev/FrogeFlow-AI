@@ -3,7 +3,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 
-const PROTECTED_PATHS = ["/dashboard", "/editor", "/settings", "/billing", "/new", "/projects"];
+const PROTECTED_PATHS = [
+  "/dashboard",
+  "/editor",
+  "/settings",
+  "/billing",
+  "/new",
+  "/projects",
+  "/templates",
+  "/admin",
+];
 const AUTH_PATHS = ["/sign-in", "/sign-up", "/forgot-password"];
 
 const intlMiddleware = createMiddleware(routing);
