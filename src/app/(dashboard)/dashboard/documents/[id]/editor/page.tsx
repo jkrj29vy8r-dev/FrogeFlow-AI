@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { OutlineView } from "@/features/documents/components/outline-view";
+import { ContentEditor } from "@/features/documents/components/content-editor";
 import type { DocumentWithGeneration, Section } from "@/types/database";
 
 export const metadata: Metadata = {
-  title: "Review Outline",
+  title: "Editor",
 };
 
-interface OutlinePageProps {
+interface EditorPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function OutlinePage({ params }: OutlinePageProps) {
+export default async function EditorPage({ params }: EditorPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
@@ -28,13 +28,16 @@ export default async function OutlinePage({ params }: OutlinePageProps) {
 
   if (!document) notFound();
 
-  // If already completed, redirect to editor
   const doc = document as unknown as DocumentWithGeneration;
-  if (doc.generation_status === "completed") {
-    redirect(`/dashboard/documents/${id}/editor`);
+
+  // If not at least outline_ready, redirect to outline
+  if (
+    doc.generation_status === "pending" ||
+    doc.generation_status === "generating_outline"
+  ) {
+    redirect(`/dashboard/documents/${id}/outline`);
   }
 
-  // Fetch existing sections
   const { data: sectionsRaw } = await supabase
     .from("sections" as never)
     .select("*")
@@ -45,8 +48,8 @@ export default async function OutlinePage({ params }: OutlinePageProps) {
   const sections: Section[] = sectionsRaw ?? [];
 
   return (
-    <div className="px-4 py-8 sm:px-6">
-      <OutlineView document={doc} initialSections={sections} />
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+      <ContentEditor document={doc} initialSections={sections} />
     </div>
   );
 }

@@ -34,9 +34,11 @@ function validateEnv() {
   return result.data;
 }
 
-// Only validate on server; skip during client-side rendering
+// Only validate on server at runtime; skip during static build and client-side rendering
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
 export const env =
-  typeof window === "undefined"
+  typeof window === "undefined" && !isBuildPhase
     ? validateEnv()
     : (process.env as unknown as z.infer<typeof serverEnvSchema>);
 
