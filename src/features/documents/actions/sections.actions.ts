@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Section, SectionVersion } from "@/types/database";
 
 function countWords(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
+  const stripped = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return stripped ? stripped.split(" ").filter(Boolean).length : 0;
 }
 
 // ── Update section title ──────────────────────────────────────────────────────
