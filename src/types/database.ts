@@ -10,6 +10,7 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
+        Relationships: [];
         Row: {
           id: string;
           email: string;
@@ -41,6 +42,7 @@ export interface Database {
         };
       };
       documents: {
+        Relationships: [];
         Row: {
           id: string;
           user_id: string;
@@ -49,6 +51,7 @@ export interface Database {
           content: Json;
           status: "draft" | "published" | "archived";
           word_count: number;
+          deleted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -60,6 +63,7 @@ export interface Database {
           content?: Json;
           status?: "draft" | "published" | "archived";
           word_count?: number;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -69,6 +73,7 @@ export interface Database {
           content?: Json;
           status?: "draft" | "published" | "archived";
           word_count?: number;
+          deleted_at?: string | null;
           updated_at?: string;
         };
       };
