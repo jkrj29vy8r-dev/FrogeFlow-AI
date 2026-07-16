@@ -11,7 +11,6 @@ interface DashboardOverviewProps {
 
 export function DashboardOverview({ user }: DashboardOverviewProps) {
   const t = useTranslations("dashboard");
-  const tProjects = useTranslations("projects");
 
   const firstName =
     (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ??

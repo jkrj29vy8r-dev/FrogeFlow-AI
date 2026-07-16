@@ -3,8 +3,7 @@
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
-export interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
 
 export function Select({ className, children, ...props }: SelectProps) {
   return (
