@@ -3,41 +3,47 @@ import { Zap, Edit3, Download, Layers, Shield, Wand2 } from "lucide-react";
 const FEATURES = [
   {
     icon: Wand2,
-    title: "AI-Powered Generation",
+    title: "AI-powered generation",
     description:
-      "Describe your topic and let AI create structured, professional content instantly.",
+      "Describe your idea and watch BookForge AI write a full, structured document — chapters, headings, content and all.",
+    color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
   },
   {
     icon: Edit3,
-    title: "Fully Editable",
+    title: "Fully editable",
     description:
-      "Every generated section is editable. Refine tone, add details, restructure freely.",
+      "Every section, paragraph, and heading is editable. Regenerate individual parts or rewrite from scratch — your content, your way.",
+    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   },
   {
     icon: Layers,
-    title: "Multiple Formats",
+    title: "10 document types",
     description:
-      "eBooks, workbooks, checklists, lead magnets, sales pages — one platform.",
+      "eBooks, PDF Guides, Workbooks, Checklists, Lead Magnets, Landing Pages, Sales Pages, Marketing Content, Social Posts, Email Campaigns.",
+    color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   },
   {
     icon: Download,
-    title: "Export Anywhere",
+    title: "One-click export",
     description:
-      "Export as PDF, HTML, or structured data. Ready for Gumroad, Shopify, or your own store.",
+      "Download polished PDFs in seconds. No watermarks on paid plans. Print-ready or screen-ready — your call.",
+    color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   },
   {
     icon: Zap,
-    title: "Blazing Fast",
+    title: "Blazing fast",
     description:
-      "Generate a complete 30-page guide in under 2 minutes. No waiting, no friction.",
+      "Most documents are generated in under two minutes. Stop staring at a blank page and start publishing.",
+    color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
   },
   {
     icon: Shield,
-    title: "Your Content, Secured",
+    title: "Your content, privately",
     description:
-      "All documents are private by default. Row-level security ensures only you see your work.",
+      "Your prompts and documents are never used to train AI models. What you create stays yours — always.",
+    color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
   },
-] as const;
+];
 
 export function FeaturesSection() {
   return (
@@ -45,11 +51,13 @@ export function FeaturesSection() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-[hsl(var(--foreground))] sm:text-4xl">
-            Everything you need to create and sell
+            Everything you need to{" "}
+            <span className="bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(252,87%,65%)] bg-clip-text text-transparent">
+              publish faster
+            </span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[hsl(var(--muted-foreground))]">
-            BookForge AI is built for creators who want to move fast without
-            sacrificing quality.
+            BookForge AI handles the hard parts so you can focus on ideas, not formatting.
           </p>
         </div>
 
@@ -59,10 +67,12 @@ export function FeaturesSection() {
             return (
               <div
                 key={feature.title}
-                className="group rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 transition-shadow hover:shadow-md"
+                className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 transition-shadow hover:shadow-md"
               >
-                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--primary)/0.1)]">
-                  <Icon className="h-5 w-5 text-[hsl(var(--primary))]" />
+                <div
+                  className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg ${feature.color}`}
+                >
+                  <Icon className="h-5 w-5" />
                 </div>
                 <h3 className="mb-2 font-semibold text-[hsl(var(--foreground))]">
                   {feature.title}

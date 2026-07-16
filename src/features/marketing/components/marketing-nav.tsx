@@ -1,19 +1,22 @@
 "use client";
 
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "Products", href: "#products" },
-  { label: "Pricing", href: "/pricing" },
-] as const;
-
 export function MarketingNav() {
+  const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLinks = [
+    { label: t("features"), href: "/#features" },
+    { label: t("products"), href: "/#products" },
+    { label: t("pricing"), href: "/pricing" },
+  ] as const;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.8)] backdrop-blur-md">
@@ -23,12 +26,12 @@ export function MarketingNav() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--primary))]">
             <BookOpen className="h-4 w-4 text-white" />
           </div>
-          <span className="text-[hsl(var(--foreground))]">BookForge AI</span>
+          <span className="text-[hsl(var(--foreground))]">{tCommon("appName")}</span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-6 md:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -42,10 +45,10 @@ export function MarketingNav() {
         {/* Desktop CTA */}
         <div className="hidden items-center gap-3 md:flex">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/sign-in">Sign in</Link>
+            <Link href="/sign-in">{t("signIn")}</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/sign-up">Get started free</Link>
+            <Link href="/sign-up">{tCommon("getStartedFree")}</Link>
           </Button>
         </div>
 
@@ -53,7 +56,7 @@ export function MarketingNav() {
         <button
           className="flex h-9 w-9 items-center justify-center rounded-md md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle menu"
+          aria-label={t("toggleMenu")}
         >
           {mobileOpen ? (
             <X className="h-5 w-5" />
@@ -71,7 +74,7 @@ export function MarketingNav() {
         )}
       >
         <nav className="flex flex-col gap-1 px-6 pb-4">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -83,10 +86,10 @@ export function MarketingNav() {
           ))}
           <div className="mt-2 flex flex-col gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href="/sign-in">Sign in</Link>
+              <Link href="/sign-in">{t("signIn")}</Link>
             </Button>
             <Button size="sm" asChild>
-              <Link href="/sign-up">Get started free</Link>
+              <Link href="/sign-up">{tCommon("getStartedFree")}</Link>
             </Button>
           </div>
         </nav>
