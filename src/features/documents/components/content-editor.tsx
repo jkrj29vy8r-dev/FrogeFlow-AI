@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   Download,
   Check,
-  Loader2,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { SectionEditor } from "./section-editor";
 import type { Section, DocumentWithGeneration } from "@/types/database";
 import type { SectionStreamEvent } from "@/features/documents/types";
-import { updateDocumentStatus } from "@/features/documents/actions/sections.actions";
+import { updateDocumentStatus, deductGenerationCredit } from "@/features/documents/actions/sections.actions";
 
 const TYPE_LABELS: Record<string, string> = {
   ebook: "eBook",
@@ -41,6 +40,7 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
   const router = useRouter();
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(
     initialSections[0]?.id ?? null
   );
@@ -50,6 +50,14 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
 
   const handleRegenerate = useCallback(
     async (sectionId: string) => {
+      setRegenerateError(null);
+
+      const creditResult = await deductGenerationCredit(document.id);
+      if (creditResult.error) {
+        setRegenerateError(creditResult.error);
+        return;
+      }
+
       setRegeneratingId(sectionId);
 
       try {
@@ -246,6 +254,20 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
         </div>
 
         <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+          {/* Regeneration error banner */}
+          {regenerateError && (
+            <div className="flex items-center gap-3 rounded-lg border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.08)] px-4 py-3 text-sm text-[hsl(var(--destructive))]">
+              <span className="flex-1">{regenerateError}</span>
+              <button
+                type="button"
+                onClick={() => setRegenerateError(null)}
+                className="text-[hsl(var(--destructive))] hover:opacity-70"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Document title */}
           <div className="pb-4">
             <div className="mb-1 flex items-center gap-2">
@@ -311,6 +333,3 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
   );
 }
 
-// Silence unused import warning
-const _Loader2 = Loader2;
-void _Loader2;

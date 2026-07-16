@@ -7,7 +7,6 @@ import {
   RotateCcw,
   Check,
   Edit2,
-  GripVertical,
   AlertCircle,
   ArrowRight,
 } from "lucide-react";
@@ -254,9 +253,6 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
                 key={section.id}
                 className="group flex items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3 transition-shadow hover:shadow-sm"
               >
-                {/* Drag handle (decorative for now) */}
-                <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover:opacity-100" />
-
                 {/* Number badge */}
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary)/0.1)] text-[10px] font-semibold text-[hsl(var(--primary))]">
                   {i + 1}
