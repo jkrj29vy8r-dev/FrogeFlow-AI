@@ -6,6 +6,8 @@ import { createExportRecord, updateExportStatus } from "@/features/exports/actio
 import type { Section, DocumentWithGeneration } from "@/types/database";
 import type { ExportSettings } from "@/types/exports";
 import { DEFAULT_EXPORT_SETTINGS } from "@/types/exports";
+import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 
 const ExportSettingsSchema = z.object({
   pageSize: z.enum(["a4", "letter", "a5"]).default("a4"),
@@ -39,6 +41,19 @@ export async function POST(request: Request): Promise<Response> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await rateLimit(`export:${user.id}`, { limit: 10, windowMs: 60_000 });
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests. Please wait a moment." }, {
+      status: 429,
+      headers: rateLimitHeaders(rl),
+    });
+  }
+
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 1);
+  if (!hasCredits) {
+    return NextResponse.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
   }
 
   let body: unknown;
@@ -114,6 +129,8 @@ export async function POST(request: Request): Promise<Response> {
       fileSizeBytes: result.fileSizeBytes,
       pageCount: result.pageCount,
     });
+
+    await deductCredits(supabase, user.id, "pdf_exported", { document_id: documentId });
 
     // Stream PDF directly back
     return new Response(new Uint8Array(result.buffer), {

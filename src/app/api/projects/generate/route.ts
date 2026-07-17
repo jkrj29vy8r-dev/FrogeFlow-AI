@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
 import { buildPhase1Prompt, buildEmailSequencePrompt } from "@/features/projects/lib/generation-prompts";
 import type { ProjectInput, AssetType } from "@/types/projects";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -52,6 +54,19 @@ export async function POST(request: Request): Promise<Response> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = await generationRateLimit(`project:${user.id}`);
+  if (!rl.success) {
+    return Response.json({ error: "Too many requests. Please wait a moment." }, {
+      status: 429,
+      headers: rateLimitHeaders(rl),
+    });
+  }
+
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 5);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
+  }
 
   let body: unknown;
   try { body = await request.json(); } catch {
@@ -246,6 +261,7 @@ export async function POST(request: Request): Promise<Response> {
           from: (t: string) => { update: (d: object) => { eq: (a: string, b: string) => Promise<unknown> } }
         }).from("projects").update({ status: "completed", updated_at: new Date().toISOString() }).eq("id", projectId);
 
+        await deductCredits(supabase, user.id, "project_generated", { project_id: projectId });
         sse(controller, { type: "done", projectId });
       } catch (err) {
         sse(controller, { type: "error", message: err instanceof Error ? err.message : "Unknown error" });
