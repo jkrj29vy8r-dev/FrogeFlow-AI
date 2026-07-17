@@ -16,7 +16,7 @@ export const PLAN_LIMITS = {
     credits_per_month: 100,
     watermark: false,
   },
-  enterprise: {
+  agency: {
     documents_per_month: Infinity,
     credits_per_month: 500,
     watermark: false,

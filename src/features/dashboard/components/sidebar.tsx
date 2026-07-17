@@ -96,7 +96,7 @@ export function Sidebar({ user, profile }: SidebarProps) {
   const email = user?.email ?? "";
   const initials = firstName.slice(0, 2).toUpperCase();
   const planLabel =
-    profile?.plan === "pro" ? "Pro" : profile?.plan === "enterprise" ? "Agency" : "Free";
+    profile?.plan === "pro" ? "Pro" : profile?.plan === "agency" ? "Agency" : "Free";
 
   return (
     <aside

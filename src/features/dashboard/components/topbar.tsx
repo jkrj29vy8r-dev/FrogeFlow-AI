@@ -32,7 +32,7 @@ export function Topbar({ user, profile }: TopbarProps) {
   const initials = firstName.slice(0, 2).toUpperCase();
   const credits = profile?.credits ?? 0;
   const planLabel =
-    profile?.plan === "pro" ? "Pro" : profile?.plan === "enterprise" ? "Agency" : "Free";
+    profile?.plan === "pro" ? "Pro" : profile?.plan === "agency" ? "Agency" : "Free";
 
   // CMD+K / Ctrl+K to open command palette
   useEffect(() => {

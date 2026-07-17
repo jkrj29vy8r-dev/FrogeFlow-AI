@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
 import { User as UserIcon, Lock, Globe, Bell, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { updateProfile, updatePreferences } from "@/features/dashboard/actions/profile.actions";
 
 type Tab = "profile" | "security" | "preferences" | "notifications" | "danger";
 
@@ -28,6 +29,8 @@ interface SettingsViewProps {
 export function SettingsView({ user, profile }: SettingsViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [profileState, profileAction, profilePending] = useActionState(updateProfile, null);
+  const [prefsState, prefsAction, prefsPending] = useActionState(updatePreferences, null);
 
   const fullName = profile?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? "";
   const email = user.email ?? "";
@@ -75,7 +78,7 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
               <h2 className="mb-5 text-base font-semibold text-[hsl(var(--foreground))]">
                 Profile
               </h2>
-              <form className="space-y-4">
+              <form action={profileAction} className="space-y-4">
                 {/* Avatar */}
                 <div className="flex items-center gap-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--primary)/0.15)] text-xl font-bold text-[hsl(var(--primary))]">
@@ -127,7 +130,15 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                   </p>
                 </div>
 
-                <Button type="submit">Save changes</Button>
+                {profileState?.error && (
+                  <p className="text-sm text-[hsl(var(--destructive))]">{profileState.error}</p>
+                )}
+                {profileState && !profileState.error && !profilePending && (
+                  <p className="text-sm text-emerald-600">Saved!</p>
+                )}
+                <Button type="submit" disabled={profilePending}>
+                  {profilePending ? "Saving…" : "Save changes"}
+                </Button>
               </form>
             </div>
           )}
@@ -153,11 +164,12 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
               <h2 className="mb-5 text-base font-semibold text-[hsl(var(--foreground))]">
                 Preferences
               </h2>
-              <div className="space-y-4">
+              <form action={prefsAction} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="language">Language</Label>
                   <select
                     id="language"
+                    name="language"
                     defaultValue={profile?.language ?? "en"}
                     className="h-10 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                   >
@@ -172,6 +184,7 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                   <Label htmlFor="timezone">Timezone</Label>
                   <select
                     id="timezone"
+                    name="timezone"
                     defaultValue={profile?.timezone ?? "UTC"}
                     className="h-10 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                   >
@@ -185,8 +198,13 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                     <option value="Asia/Tokyo">Tokyo (JST)</option>
                   </select>
                 </div>
-                <Button type="button">Save preferences</Button>
-              </div>
+                {prefsState?.error && (
+                  <p className="text-sm text-[hsl(var(--destructive))]">{prefsState.error}</p>
+                )}
+                <Button type="submit" disabled={prefsPending}>
+                  {prefsPending ? "Saving…" : "Save preferences"}
+                </Button>
+              </form>
             </div>
           )}
 

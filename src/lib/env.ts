@@ -16,6 +16,8 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
     .string()
     .min(1, "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is required"),
+  STRIPE_PRICE_PRO_MONTHLY: z.string().min(1, "STRIPE_PRICE_PRO_MONTHLY is required"),
+  STRIPE_PRICE_AGENCY_MONTHLY: z.string().min(1, "STRIPE_PRICE_AGENCY_MONTHLY is required"),
 
   // Resend
   RESEND_API_KEY: z.string().min(1, "RESEND_API_KEY is required"),

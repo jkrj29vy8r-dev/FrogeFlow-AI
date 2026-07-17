@@ -171,7 +171,7 @@ export interface Database {
 
 // ── Shared union types ────────────────────────────────────────────────────────
 
-export type PlanType = "free" | "pro" | "enterprise";
+export type PlanType = "free" | "pro" | "agency";
 
 export type DocumentType =
   | "ebook"
