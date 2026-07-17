@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { Image, ArrowRight } from "lucide-react";
+import { Image as ImageIcon, ArrowRight } from "lucide-react";
 import { createCover } from "@/features/covers/actions/covers.actions";
 import { DEFAULT_VARIATION } from "@/features/covers/lib/layouts";
 import { applyLayout } from "@/features/covers/lib/layouts";
@@ -56,7 +56,7 @@ export default function NewCoverPage() {
     <div className="mx-auto max-w-lg py-12">
       <div className="mb-8 flex items-center gap-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--primary)/0.1)]">
-          <Image className="h-7 w-7 text-[hsl(var(--primary))]" />
+          <ImageIcon className="h-7 w-7 text-[hsl(var(--primary))]" aria-hidden="true" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">New Cover Design</h1>

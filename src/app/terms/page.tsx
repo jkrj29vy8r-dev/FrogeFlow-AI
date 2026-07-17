@@ -38,7 +38,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">5. Limitation of Liability</h2>
-              <p className="mt-2 text-sm">BookForge AI is provided "as is" without warranties. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service.</p>
+              <p className="mt-2 text-sm">BookForge AI is provided &ldquo;as is&rdquo; without warranties. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service.</p>
             </section>
 
             <section>

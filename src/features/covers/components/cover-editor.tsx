@@ -56,7 +56,7 @@ export function CoverEditor({ cover }: Props) {
     return () => window.removeEventListener('keydown', handler);
   });
 
-  function pushHistory(newContent: CoverContent) {
+  const pushHistory = useCallback((newContent: CoverContent) => {
     setHistory(h => {
       const next = h.slice(0, histIdx + 1);
       next.push(newContent);
@@ -65,7 +65,8 @@ export function CoverEditor({ cover }: Props) {
     });
     setHistIdx(i => Math.min(i + 1, MAX_HISTORY - 1));
     scheduleSave(newContent);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [histIdx]);
 
   function undo() {
     if (histIdx > 0) {
@@ -97,16 +98,16 @@ export function CoverEditor({ cover }: Props) {
       elements: content.elements.map(el => el.id === id ? { ...el, ...updates } as CoverElement : el),
     };
     pushHistory(newContent);
-  }, [content]);
+  }, [content, pushHistory]);
 
   const handleUpdateBackground = useCallback((bg: CoverBackground) => {
     pushHistory({ ...content, background: bg });
-  }, [content]);
+  }, [content, pushHistory]);
 
   const handleApplyContent = useCallback((newContent: CoverContent) => {
     setSelectedId(null);
     pushHistory(newContent);
-  }, []);
+  }, [pushHistory]);
 
   const coverInput: Pick<CoverInput, 'title' | 'subtitle' | 'author' | 'brandName'> = {
     title: (content.elements.find(e => e.kind === 'text' && e.role === 'title') as { value: string } | undefined)?.value ?? cover.name,
