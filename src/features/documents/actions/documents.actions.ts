@@ -119,3 +119,64 @@ export async function createDocument(
 
   redirect(`/dashboard/documents/${doc.id}/outline`);
 }
+
+export async function renameDocument(id: string, title: string): Promise<{ error?: string }> {
+  if (!title.trim()) return { error: "Title cannot be empty" };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ title: title.trim().slice(0, 200), updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to rename document" };
+  return {};
+}
+
+export async function duplicateDocument(id: string): Promise<{ error?: string; newId?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!doc) return { error: "Document not found" };
+
+  const { data: newDoc, error } = await supabase
+    .from("documents")
+    .insert({
+      user_id: user.id,
+      title: `${doc.title} (Copy)`,
+      type: doc.type,
+      content: doc.content,
+      status: "draft",
+    } as DocumentInsert)
+    .select("id")
+    .single();
+
+  if (error || !newDoc) return { error: "Failed to duplicate document" };
+  return { newId: newDoc.id };
+}
+
+export async function deleteDocument(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to delete document" };
+  return {};
+}
