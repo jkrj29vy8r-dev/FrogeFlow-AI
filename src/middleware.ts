@@ -1,7 +1,6 @@
-import createMiddleware from "next-intl/middleware";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { routing } from "@/i18n/routing";
+import { locales, defaultLocale } from "@/i18n/config";
 
 const PROTECTED_PATHS = [
   "/dashboard",
@@ -22,12 +21,39 @@ const PROTECTED_PATHS = [
 ];
 const AUTH_PATHS = ["/sign-in", "/sign-up", "/forgot-password"];
 
-const intlMiddleware = createMiddleware(routing);
+// Detect locale from cookie or Accept-Language header (no path prefix rewriting)
+function detectLocale(request: NextRequest): string {
+  // 1. Check NEXT_LOCALE cookie (set by language switcher)
+  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
+  if (cookieLocale && (locales as readonly string[]).includes(cookieLocale)) {
+    return cookieLocale;
+  }
+
+  // 2. Parse Accept-Language header
+  const acceptLang = request.headers.get("accept-language");
+  if (acceptLang) {
+    const preferred = acceptLang
+      .split(",")
+      .map((part) => part.trim().split(";")[0].trim().split("-")[0].toLowerCase());
+    for (const lang of preferred) {
+      if ((locales as readonly string[]).includes(lang)) return lang;
+    }
+  }
+
+  return defaultLocale;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Strip locale prefix for path matching (e.g., /es/dashboard → /dashboard)
+  // API routes: pass through without any locale handling
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
+  // Detect locale and build response with locale header
+  const locale = detectLocale(request);
+
   const pathnameWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
 
   const isProtected = PROTECTED_PATHS.some(
@@ -36,16 +62,13 @@ export async function middleware(request: NextRequest) {
   const isAuthPath = AUTH_PATHS.some(
     (p) => pathnameWithoutLocale === p || pathnameWithoutLocale.startsWith(`${p}/`)
   );
-  const isApiRoute = pathname.startsWith("/api/");
 
-  // API routes: auth check only, no intl
-  if (isApiRoute) {
-    return NextResponse.next();
-  }
-
-  // For protected and auth paths: check session before handling locale
   if (isProtected || isAuthPath) {
-    let response = NextResponse.next({ request });
+    let response = NextResponse.next({
+      request: {
+        headers: new Headers({ ...Object.fromEntries(request.headers), "X-NEXT-INTL-LOCALE": locale }),
+      },
+    });
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -59,7 +82,11 @@ export async function middleware(request: NextRequest) {
             cookiesToSet.forEach(({ name, value }) =>
               request.cookies.set(name, value)
             );
-            response = NextResponse.next({ request });
+            response = NextResponse.next({
+              request: {
+                headers: new Headers({ ...Object.fromEntries(request.headers), "X-NEXT-INTL-LOCALE": locale }),
+              },
+            });
             cookiesToSet.forEach(({ name, value, options }) =>
               response.cookies.set(name, value, options)
             );
@@ -85,17 +112,18 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Let intl middleware handle the response after auth passes
-    const intlResponse = intlMiddleware(request);
-    // Forward any auth cookies set during session refresh
-    response.cookies.getAll().forEach(({ name, value }) => {
-      intlResponse.cookies.set(name, value);
-    });
-    return intlResponse;
+    response.headers.set("X-NEXT-INTL-LOCALE", locale);
+    return response;
   }
 
-  // All other routes: intl middleware handles locale routing
-  return intlMiddleware(request);
+  // All other routes: just set locale header, no path rewriting
+  const response = NextResponse.next({
+    request: {
+      headers: new Headers({ ...Object.fromEntries(request.headers), "X-NEXT-INTL-LOCALE": locale }),
+    },
+  });
+  response.headers.set("X-NEXT-INTL-LOCALE", locale);
+  return response;
 }
 
 export const config = {
