@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, DocumentType, Json } from "@/types/database";
@@ -133,6 +134,8 @@ export async function renameDocument(id: string, title: string): Promise<{ error
     .eq("user_id", user.id);
 
   if (error) return { error: "Failed to rename document" };
+  revalidatePath("/documents");
+  revalidatePath("/projects");
   return {};
 }
 
@@ -163,6 +166,8 @@ export async function duplicateDocument(id: string): Promise<{ error?: string; n
     .single();
 
   if (error || !newDoc) return { error: "Failed to duplicate document" };
+  revalidatePath("/documents");
+  revalidatePath("/projects");
   return { newId: newDoc.id };
 }
 
@@ -178,5 +183,7 @@ export async function deleteDocument(id: string): Promise<{ error?: string }> {
     .eq("user_id", user.id);
 
   if (error) return { error: "Failed to delete document" };
+  revalidatePath("/documents");
+  revalidatePath("/projects");
   return {};
 }

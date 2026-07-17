@@ -1,6 +1,8 @@
+import { env } from "@/lib/env";
+
 export const STRIPE_PRICES = {
-  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY ?? "",
-  agency_monthly: process.env.STRIPE_PRICE_AGENCY_MONTHLY ?? "",
+  pro_monthly: env.STRIPE_PRICE_PRO_MONTHLY,
+  agency_monthly: env.STRIPE_PRICE_AGENCY_MONTHLY,
 } as const;
 
 export type StripePriceKey = keyof typeof STRIPE_PRICES;

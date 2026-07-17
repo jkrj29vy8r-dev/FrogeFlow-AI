@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";

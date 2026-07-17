@@ -26,9 +26,22 @@ interface SettingsViewProps {
   profile: Profile | null;
 }
 
+const NOTIFICATION_ITEMS = [
+  { key: "generation_complete", label: "Generation complete", description: "When a document finishes generating" },
+  { key: "credits_low", label: "Credits low", description: "When you have fewer than 5 credits remaining" },
+  { key: "monthly_summary", label: "Monthly summary", description: "A summary of your activity each month" },
+  { key: "product_updates", label: "Product updates", description: "New features and improvements" },
+] as const;
+
 export function SettingsView({ user, profile }: SettingsViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [notifEnabled, setNotifEnabled] = useState<Record<string, boolean>>({
+    generation_complete: true,
+    credits_low: true,
+    monthly_summary: false,
+    product_updates: true,
+  });
   const [profileState, profileAction, profilePending] = useActionState(updateProfile, null);
   const [prefsState, prefsAction, prefsPending] = useActionState(updatePreferences, null);
 
@@ -214,31 +227,30 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                 Notifications
               </h2>
               <div className="space-y-4">
-                {[
-                  { label: "Generation complete", description: "When a document finishes generating" },
-                  { label: "Credits low", description: "When you have fewer than 5 credits remaining" },
-                  { label: "Monthly summary", description: "A summary of your activity each month" },
-                  { label: "Product updates", description: "New features and improvements" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {item.label}
-                      </p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {item.description}
-                      </p>
+                {NOTIFICATION_ITEMS.map((item) => {
+                  const enabled = notifEnabled[item.key] ?? false;
+                  return (
+                    <div key={item.key} className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                          {item.label}
+                        </p>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                          {item.description}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={enabled}
+                        onClick={() => setNotifEnabled(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                        className={`relative h-5 w-9 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:ring-offset-2 ${enabled ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--muted))]"}`}
+                      >
+                        <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked="true"
-                      className="relative h-5 w-9 rounded-full bg-[hsl(var(--primary))] transition-colors focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:ring-offset-2"
-                    >
-                      <span className="absolute left-1 top-0.5 h-4 w-4 translate-x-4 rounded-full bg-white shadow transition-transform" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
