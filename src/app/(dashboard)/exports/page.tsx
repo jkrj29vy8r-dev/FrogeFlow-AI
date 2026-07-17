@@ -1,30 +1,59 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
-import { Download, FileText, Plus } from "lucide-react";
+import { FileText, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ExportHistoryList } from "@/features/exports/components/export-history-list";
+import { getExportHistory, getExportStats } from "@/features/exports/actions/exports.actions";
+import type { PdfExport } from "@/types/exports";
 
 export const metadata: Metadata = {
   title: "Exports",
 };
 
-export default function ExportsPage() {
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default async function ExportsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in");
+
+  const [{ exports }, stats] = await Promise.all([
+    getExportHistory(),
+    getExportStats(),
+  ]);
+
+  const exportList: PdfExport[] = exports ?? [];
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Exports</h1>
           <p className="mt-0.5 text-sm text-[hsl(var(--muted-foreground))]">
-            Download and manage your exported documents.
+            Download and manage your exported PDF documents.
           </p>
         </div>
+        <Button asChild size="sm" className="gap-2">
+          <Link href="/projects">
+            <FileText className="h-3.5 w-3.5" />
+            Go to projects
+          </Link>
+        </Button>
       </div>
 
-      {/* Export stats */}
+      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Total exports", value: "0" },
-          { label: "PDFs generated", value: "0" },
-          { label: "Storage used", value: "0 MB" },
+          { label: "Total exports", value: stats.totalExports.toString() },
+          { label: "Total downloads", value: stats.totalDownloads.toString() },
+          { label: "Storage used", value: formatBytes(stats.totalBytes) },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -36,35 +65,24 @@ export default function ExportsPage() {
         ))}
       </div>
 
-      {/* Empty state */}
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[hsl(var(--border))] py-16 text-center">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--muted))]">
-          <Download className="h-5 w-5 text-[hsl(var(--muted-foreground))]" />
-        </div>
-        <p className="text-sm font-medium text-[hsl(var(--foreground))]">No exports yet</p>
-        <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-          Export a document to PDF to see it here.
-        </p>
-        <Button size="sm" asChild className="mt-4">
-          <Link href="/projects">
-            <FileText className="h-3.5 w-3.5" />
-            Go to projects
-          </Link>
-        </Button>
+      {/* Export history */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-[hsl(var(--foreground))]">Export history</h2>
+        <ExportHistoryList exports={exportList} />
       </div>
 
-      {/* Upgrade prompt for free users */}
+      {/* Upgrade prompt */}
       <div className="rounded-xl border border-[hsl(var(--border))] bg-gradient-to-r from-[hsl(var(--primary)/0.05)] to-[hsl(var(--primary)/0.1)] p-5">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--primary)/0.15)]">
-            <Plus className="h-5 w-5 text-[hsl(var(--primary))]" />
+            <Zap className="h-5 w-5 text-[hsl(var(--primary))]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
               Remove watermarks with Pro
             </p>
             <p className="mt-0.5 text-xs text-[hsl(var(--muted-foreground))]">
-              Free exports include a BookForge AI watermark. Upgrade to remove it.
+              Free exports include a FrogeFlow AI watermark. Upgrade to remove it and unlock custom branding presets.
             </p>
           </div>
           <Button size="sm" asChild>

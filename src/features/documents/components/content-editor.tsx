@@ -39,6 +39,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SectionEditor } from "./section-editor";
+import { ExportDialog } from "@/features/exports/components/export-dialog";
 import type { Section, DocumentWithGeneration } from "@/types/database";
 import {
   updateDocumentStatus,
@@ -204,6 +205,7 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -377,17 +379,28 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
             </>
           )}
         </Button>
-        <Button variant="outline" size="sm" asChild className="w-full gap-2">
-          <Link href="/exports">
-            <Download className="h-3.5 w-3.5" />
-            Export PDF
-          </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-2"
+          onClick={() => setShowExport(true)}
+        >
+          <Download className="h-3.5 w-3.5" />
+          Export PDF
         </Button>
       </div>
     </>
   );
 
   return (
+    <>
+    {showExport && (
+      <ExportDialog
+        documentId={document.id}
+        documentTitle={document.title}
+        onClose={() => setShowExport(false)}
+      />
+    )}
     <div
       ref={containerRef}
       className={cn(
@@ -585,7 +598,7 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
-                  onDragEnd={(e) => void handleDragEnd(e)}
+                  onDragEnd={(e: DragEndEvent) => void handleDragEnd(e)}
                 >
                   <SortableContext
                     items={sections.map((s) => s.id)}
@@ -611,11 +624,13 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
                     {totalWords.toLocaleString()} words total
                   </p>
                   <div className="flex gap-3">
-                    <Button variant="outline" asChild className="gap-2">
-                      <Link href="/exports">
-                        <Download className="h-4 w-4" />
-                        Export PDF
-                      </Link>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => setShowExport(true)}
+                    >
+                      <Download className="h-4 w-4" />
+                      Export PDF
                     </Button>
                     <Button
                       className="gap-2"
@@ -633,5 +648,6 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
         </div>
       </div>
     </div>
+    </>
   );
 }
