@@ -56,7 +56,17 @@ export function CoverEditor({ cover }: Props) {
     return () => window.removeEventListener('keydown', handler);
   });
 
-  function pushHistory(newContent: CoverContent) {
+  const scheduleSave = useCallback((c: CoverContent) => {
+    setSaveStatus('saving');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      await updateCoverContent(cover.id, c);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 1500);
+  }, [cover.id]);
+
+  const pushHistory = useCallback((newContent: CoverContent) => {
     setHistory(h => {
       const next = h.slice(0, histIdx + 1);
       next.push(newContent);
@@ -65,7 +75,7 @@ export function CoverEditor({ cover }: Props) {
     });
     setHistIdx(i => Math.min(i + 1, MAX_HISTORY - 1));
     scheduleSave(newContent);
-  }
+  }, [histIdx, scheduleSave]);
 
   function undo() {
     if (histIdx > 0) {
@@ -81,32 +91,22 @@ export function CoverEditor({ cover }: Props) {
     }
   }
 
-  function scheduleSave(c: CoverContent) {
-    setSaveStatus('saving');
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      await updateCoverContent(cover.id, c);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 1500);
-  }
-
   const handleUpdateElement = useCallback((id: string, updates: Partial<CoverElement>) => {
     const newContent: CoverContent = {
       ...content,
       elements: content.elements.map(el => el.id === id ? { ...el, ...updates } as CoverElement : el),
     };
     pushHistory(newContent);
-  }, [content]);
+  }, [content, pushHistory]);
 
   const handleUpdateBackground = useCallback((bg: CoverBackground) => {
     pushHistory({ ...content, background: bg });
-  }, [content]);
+  }, [content, pushHistory]);
 
   const handleApplyContent = useCallback((newContent: CoverContent) => {
     setSelectedId(null);
     pushHistory(newContent);
-  }, []);
+  }, [pushHistory]);
 
   const coverInput: Pick<CoverInput, 'title' | 'subtitle' | 'author' | 'brandName'> = {
     title: (content.elements.find(e => e.kind === 'text' && e.role === 'title') as { value: string } | undefined)?.value ?? cover.name,

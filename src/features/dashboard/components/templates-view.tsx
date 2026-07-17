@@ -258,13 +258,12 @@ export function TemplatesView() {
                     {tpl.category}
                   </span>
                   {tpl.isPremium ? (
-                    <button
-                      type="button"
+                    <Link
+                      href="/billing"
                       className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400"
-                      onClick={() => {}}
                     >
                       <Star className="h-3 w-3" /> Upgrade
-                    </button>
+                    </Link>
                   ) : (
                     <Link
                       href={tpl.href}

@@ -91,6 +91,18 @@ export default async function BillingPage({
   const currentPlan = profile?.plan ?? "free";
   const credits = profile?.credits ?? 0;
 
+  let documentsThisMonth = 0;
+  if (user) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { count } = await supabase
+      .from("documents")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", startOfMonth);
+    documentsThisMonth = count ?? 0;
+  }
+
   return (
     <div className="space-y-8">
       {params.success && (
@@ -135,13 +147,13 @@ export default async function BillingPage({
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[hsl(var(--border))]">
               <div
                 className="h-full rounded-full bg-[hsl(var(--primary))]"
-                style={{ width: `${Math.min(100, (credits / (currentPlan === "pro" ? 100 : currentPlan === "enterprise" ? 500 : 3)) * 100)}%` }}
+                style={{ width: `${Math.min(100, (credits / (currentPlan === "pro" ? 100 : currentPlan === "agency" ? 500 : 3)) * 100)}%` }}
               />
             </div>
           </div>
           <div className="rounded-lg bg-[hsl(var(--muted))] p-4">
             <p className="text-xs text-[hsl(var(--muted-foreground))]">Documents this month</p>
-            <p className="mt-1 text-2xl font-bold text-[hsl(var(--foreground))]">0</p>
+            <p className="mt-1 text-2xl font-bold text-[hsl(var(--foreground))]">{documentsThisMonth}</p>
             <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
               {currentPlan === "free" ? "1 document limit" : "Unlimited"}
             </p>
@@ -168,7 +180,7 @@ export default async function BillingPage({
         <div className="grid gap-4 sm:grid-cols-3">
           {PLANS.map((plan) => {
             const Icon = PLAN_ICONS[plan.id];
-            const isCurrent = currentPlan === plan.id || (plan.id === "agency" && currentPlan === "enterprise");
+            const isCurrent = currentPlan === plan.id;
             return (
               <div
                 key={plan.id}

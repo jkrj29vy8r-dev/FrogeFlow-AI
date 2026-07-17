@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
+import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -55,6 +56,14 @@ export async function POST(request: Request): Promise<Response> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = await rateLimit(`edit:${user.id}`, { limit: 20, windowMs: 60_000 });
+  if (!rl.success) {
+    return Response.json({ error: "Too many requests. Please wait a moment." }, {
+      status: 429,
+      headers: rateLimitHeaders(rl),
+    });
+  }
 
   let body: unknown;
   try {

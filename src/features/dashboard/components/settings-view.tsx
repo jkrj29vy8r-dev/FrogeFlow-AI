@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
 import { User as UserIcon, Lock, Globe, Bell, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { updateProfile, updatePreferences } from "@/features/dashboard/actions/profile.actions";
 
 type Tab = "profile" | "security" | "preferences" | "notifications" | "danger";
 
@@ -25,9 +26,24 @@ interface SettingsViewProps {
   profile: Profile | null;
 }
 
+const NOTIFICATION_ITEMS = [
+  { key: "generation_complete", label: "Generation complete", description: "When a document finishes generating" },
+  { key: "credits_low", label: "Credits low", description: "When you have fewer than 5 credits remaining" },
+  { key: "monthly_summary", label: "Monthly summary", description: "A summary of your activity each month" },
+  { key: "product_updates", label: "Product updates", description: "New features and improvements" },
+] as const;
+
 export function SettingsView({ user, profile }: SettingsViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [notifEnabled, setNotifEnabled] = useState<Record<string, boolean>>({
+    generation_complete: true,
+    credits_low: true,
+    monthly_summary: false,
+    product_updates: true,
+  });
+  const [profileState, profileAction, profilePending] = useActionState(updateProfile, null);
+  const [prefsState, prefsAction, prefsPending] = useActionState(updatePreferences, null);
 
   const fullName = profile?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? "";
   const email = user.email ?? "";
@@ -75,7 +91,7 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
               <h2 className="mb-5 text-base font-semibold text-[hsl(var(--foreground))]">
                 Profile
               </h2>
-              <form className="space-y-4">
+              <form action={profileAction} className="space-y-4">
                 {/* Avatar */}
                 <div className="flex items-center gap-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--primary)/0.15)] text-xl font-bold text-[hsl(var(--primary))]">
@@ -127,7 +143,15 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                   </p>
                 </div>
 
-                <Button type="submit">Save changes</Button>
+                {profileState?.error && (
+                  <p className="text-sm text-[hsl(var(--destructive))]">{profileState.error}</p>
+                )}
+                {profileState && !profileState.error && !profilePending && (
+                  <p className="text-sm text-emerald-600">Saved!</p>
+                )}
+                <Button type="submit" disabled={profilePending}>
+                  {profilePending ? "Saving…" : "Save changes"}
+                </Button>
               </form>
             </div>
           )}
@@ -153,11 +177,12 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
               <h2 className="mb-5 text-base font-semibold text-[hsl(var(--foreground))]">
                 Preferences
               </h2>
-              <div className="space-y-4">
+              <form action={prefsAction} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="language">Language</Label>
                   <select
                     id="language"
+                    name="language"
                     defaultValue={profile?.language ?? "en"}
                     className="h-10 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                   >
@@ -172,6 +197,7 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                   <Label htmlFor="timezone">Timezone</Label>
                   <select
                     id="timezone"
+                    name="timezone"
                     defaultValue={profile?.timezone ?? "UTC"}
                     className="h-10 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                   >
@@ -185,8 +211,13 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                     <option value="Asia/Tokyo">Tokyo (JST)</option>
                   </select>
                 </div>
-                <Button type="button">Save preferences</Button>
-              </div>
+                {prefsState?.error && (
+                  <p className="text-sm text-[hsl(var(--destructive))]">{prefsState.error}</p>
+                )}
+                <Button type="submit" disabled={prefsPending}>
+                  {prefsPending ? "Saving…" : "Save preferences"}
+                </Button>
+              </form>
             </div>
           )}
 
@@ -196,31 +227,30 @@ export function SettingsView({ user, profile }: SettingsViewProps) {
                 Notifications
               </h2>
               <div className="space-y-4">
-                {[
-                  { label: "Generation complete", description: "When a document finishes generating" },
-                  { label: "Credits low", description: "When you have fewer than 5 credits remaining" },
-                  { label: "Monthly summary", description: "A summary of your activity each month" },
-                  { label: "Product updates", description: "New features and improvements" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {item.label}
-                      </p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {item.description}
-                      </p>
+                {NOTIFICATION_ITEMS.map((item) => {
+                  const enabled = notifEnabled[item.key] ?? false;
+                  return (
+                    <div key={item.key} className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                          {item.label}
+                        </p>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                          {item.description}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={enabled}
+                        onClick={() => setNotifEnabled(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                        className={`relative h-5 w-9 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:ring-offset-2 ${enabled ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--muted))]"}`}
+                      >
+                        <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked="true"
-                      className="relative h-5 w-9 rounded-full bg-[hsl(var(--primary))] transition-colors focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:ring-offset-2"
-                    >
-                      <span className="absolute left-1 top-0.5 h-4 w-4 translate-x-4 rounded-full bg-white shadow transition-transform" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

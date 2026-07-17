@@ -3,6 +3,8 @@ import { getAnthropic, AI_MODEL, AI_MAX_TOKENS } from "@/lib/ai/client";
 import { buildOutlinePrompt } from "@/lib/ai/prompts";
 import type { DocumentMetadata, OutlineSection } from "@/features/documents/types";
 import type { Section } from "@/types/database";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -50,6 +52,19 @@ export async function POST(request: Request): Promise<Response> {
   } = await supabase.auth.getUser();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await generationRateLimit(`outline:${user.id}`);
+  if (!rl.success) {
+    return Response.json({ error: "Too many requests. Please wait a moment." }, {
+      status: 429,
+      headers: rateLimitHeaders(rl),
+    });
+  }
+
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 1);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
   }
 
   let body: unknown;
@@ -145,13 +160,10 @@ export async function POST(request: Request): Promise<Response> {
           .update({ generation_status: "outline_ready" } as unknown as never)
           .eq("id", documentId);
 
-        // Log usage event
-        await supabase.from("usage_events").insert({
-          user_id: user.id,
+        // Deduct credits and log usage
+        await deductCredits(supabase, user.id, "outline_generated", {
           document_id: documentId,
-          event_type: "outline_generated",
-          credits_used: 0,
-          metadata: { section_count: sections.length },
+          section_count: sections.length,
         });
 
         send(controller, { type: "done", sections });

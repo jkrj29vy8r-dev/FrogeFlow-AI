@@ -4,6 +4,8 @@ import { buildSectionPrompt } from "@/lib/ai/prompts";
 import type { DocumentMetadata, OutlineSection } from "@/features/documents/types";
 import type { Section } from "@/types/database";
 import { PRODUCT_TYPE_CONFIGS } from "@/features/documents/types";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -60,15 +62,17 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Document not found" }, { status: 404 });
   }
 
-  // Check credits (full content generation costs 1 credit total, checked once)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("credits")
-    .eq("id", user.id)
-    .single();
+  const rl = await generationRateLimit(`section:${user.id}`);
+  if (!rl.success) {
+    return Response.json({ error: "Too many requests. Please wait a moment." }, {
+      status: 429,
+      headers: rateLimitHeaders(rl),
+    });
+  }
 
-  if (!profile || profile.credits < 1) {
-    return Response.json({ error: "Insufficient credits" }, { status: 402 });
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 1);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
   }
 
   // Fetch target section
@@ -190,13 +194,11 @@ export async function POST(request: Request): Promise<Response> {
           } as never)
           .eq("id", sectionId);
 
-        // Log usage event
-        await supabase.from("usage_events").insert({
-          user_id: user.id,
+        // Deduct credits and log usage
+        await deductCredits(supabase, user.id, "section_generated", {
           document_id: documentId,
-          event_type: "section_generated",
-          credits_used: 0,
-          metadata: { section_id: sectionId, word_count: wordCount },
+          section_id: sectionId,
+          word_count: wordCount,
         });
 
         send(controller, { type: "done", wordCount });

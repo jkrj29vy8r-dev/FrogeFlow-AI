@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import type { Document } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,9 @@ import {
   Clock,
   BookOpen,
   Zap,
+  Pencil,
+  Copy,
+  Trash2,
 } from "lucide-react";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import {
@@ -23,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { renameDocument, duplicateDocument, deleteDocument } from "@/features/documents/actions/documents.actions";
 
 const TYPE_LABELS: Record<string, string> = {
   ebook: "eBook",
@@ -57,7 +62,76 @@ const TYPE_COLORS: Record<string, string> = {
   checklist: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
 };
 
-function ProjectCard({ doc }: { doc: Document }) {
+interface DocActionsProps {
+  doc: Document;
+  onRenamed: (id: string, title: string) => void;
+  onDeleted: (id: string) => void;
+  onDuplicated: (newId: string) => void;
+}
+
+function DocActions({ doc, onRenamed, onDeleted, onDuplicated }: DocActionsProps) {
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(doc.title);
+
+  async function handleRename() {
+    if (!renameValue.trim() || renameValue.trim() === doc.title) {
+      setRenaming(false);
+      return;
+    }
+    const result = await renameDocument(doc.id, renameValue.trim());
+    if (!result.error) onRenamed(doc.id, renameValue.trim());
+    setRenaming(false);
+  }
+
+  async function handleDuplicate() {
+    const result = await duplicateDocument(doc.id);
+    if (result.newId) onDuplicated(result.newId);
+  }
+
+  async function handleDelete() {
+    const result = await deleteDocument(doc.id);
+    if (!result.error) onDeleted(doc.id);
+  }
+
+  if (renaming) {
+    return (
+      <div className="flex items-center gap-1" onClick={e => e.preventDefault()}>
+        <input
+          autoFocus
+          value={renameValue}
+          onChange={e => setRenameValue(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") void handleRename(); if (e.key === "Escape") setRenaming(false); }}
+          onBlur={() => void handleRename()}
+          className="h-6 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2 text-xs text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ring))]"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <div className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]">
+          <MoreHorizontal className="h-4 w-4" />
+        </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => { setRenameValue(doc.title); setRenaming(true); }}>
+          <Pencil className="h-3.5 w-3.5" /> Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => void handleDuplicate()}>
+          <Copy className="h-3.5 w-3.5" /> Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => void handleDelete()} destructive>
+          <Trash2 className="h-3.5 w-3.5" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ProjectCard({ doc, onRenamed, onDeleted, onDuplicated }: { doc: Document } & Omit<DocActionsProps, "doc">) {
   const Icon = TYPE_ICONS[doc.type] ?? FileText;
   const colorClass = TYPE_COLORS[doc.type] ?? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]";
 
@@ -67,19 +141,7 @@ function ProjectCard({ doc }: { doc: Document }) {
         <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", colorClass)}>
           <Icon className="h-5 w-5" />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]">
-              <MoreHorizontal className="h-4 w-4" />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => {}}>Rename</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}}>Duplicate</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {}} destructive>Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <DocActions doc={doc} onRenamed={onRenamed} onDeleted={onDeleted} onDuplicated={onDuplicated} />
       </div>
 
       <Link href={`/dashboard/documents/${doc.id}/outline`} className="block">
@@ -118,7 +180,7 @@ function ProjectCard({ doc }: { doc: Document }) {
   );
 }
 
-function ProjectRow({ doc }: { doc: Document }) {
+function ProjectRow({ doc, onRenamed, onDeleted, onDuplicated }: { doc: Document } & Omit<DocActionsProps, "doc">) {
   const Icon = TYPE_ICONS[doc.type] ?? FileText;
   const colorClass = TYPE_COLORS[doc.type] ?? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]";
 
@@ -148,19 +210,7 @@ function ProjectRow({ doc }: { doc: Document }) {
       <span className="shrink-0 text-xs text-[hsl(var(--muted-foreground))]">
         {formatRelativeTime(doc.updated_at)}
       </span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div className="flex h-7 w-7 cursor-pointer shrink-0 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]">
-            <MoreHorizontal className="h-4 w-4" />
-          </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => {}}>Rename</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {}}>Duplicate</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => {}} destructive>Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <DocActions doc={doc} onRenamed={onRenamed} onDeleted={onDeleted} onDuplicated={onDuplicated} />
     </div>
   );
 }
@@ -172,15 +222,29 @@ interface ProjectsViewProps {
 type ViewMode = "grid" | "list";
 type SortKey = "updated_at" | "created_at" | "title";
 
-export function ProjectsView({ documents }: ProjectsViewProps) {
+export function ProjectsView({ documents: initialDocs }: ProjectsViewProps) {
+  const router = useRouter();
+  const [docs, setDocs] = useState(initialDocs);
   const [view, setView] = useState<ViewMode>("grid");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("updated_at");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const types = ["all", ...Array.from(new Set(documents.map((d) => d.type)))];
+  const handleRenamed = useCallback((id: string, title: string) => {
+    setDocs(prev => prev.map(d => d.id === id ? { ...d, title } : d));
+  }, []);
 
-  const filtered = documents
+  const handleDeleted = useCallback((id: string) => {
+    setDocs(prev => prev.filter(d => d.id !== id));
+  }, []);
+
+  const handleDuplicated = useCallback((newId: string) => {
+    router.push(`/dashboard/documents/${newId}/outline`);
+  }, [router]);
+
+  const types = ["all", ...Array.from(new Set(docs.map((d) => d.type)))];
+
+  const filtered = docs
     .filter(
       (d) =>
         (typeFilter === "all" || d.type === typeFilter) &&
@@ -198,7 +262,7 @@ export function ProjectsView({ documents }: ProjectsViewProps) {
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Projects</h1>
           <p className="mt-0.5 text-sm text-[hsl(var(--muted-foreground))]">
-            {documents.length} {documents.length === 1 ? "project" : "projects"}
+            {docs.length} {docs.length === 1 ? "project" : "projects"}
           </p>
         </div>
         <Button asChild size="sm">
@@ -304,13 +368,25 @@ export function ProjectsView({ documents }: ProjectsViewProps) {
       ) : view === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((doc) => (
-            <ProjectCard key={doc.id} doc={doc} />
+            <ProjectCard
+              key={doc.id}
+              doc={doc}
+              onRenamed={handleRenamed}
+              onDeleted={handleDeleted}
+              onDuplicated={handleDuplicated}
+            />
           ))}
         </div>
       ) : (
         <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
           {filtered.map((doc) => (
-            <ProjectRow key={doc.id} doc={doc} />
+            <ProjectRow
+              key={doc.id}
+              doc={doc}
+              onRenamed={handleRenamed}
+              onDeleted={handleDeleted}
+              onDuplicated={handleDuplicated}
+            />
           ))}
         </div>
       )}

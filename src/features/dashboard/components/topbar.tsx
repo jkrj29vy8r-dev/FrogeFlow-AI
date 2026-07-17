@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { Search, Bell, Plus, Settings, ChevronDown, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "./breadcrumbs";
@@ -24,6 +24,7 @@ interface TopbarProps {
 }
 
 export function Topbar({ user, profile }: TopbarProps) {
+  const router = useRouter();
   const [cmdOpen, setCmdOpen] = useState(false);
 
   const firstName =
@@ -32,7 +33,7 @@ export function Topbar({ user, profile }: TopbarProps) {
   const initials = firstName.slice(0, 2).toUpperCase();
   const credits = profile?.credits ?? 0;
   const planLabel =
-    profile?.plan === "pro" ? "Pro" : profile?.plan === "enterprise" ? "Agency" : "Free";
+    profile?.plan === "pro" ? "Pro" : profile?.plan === "agency" ? "Agency" : "Free";
 
   // CMD+K / Ctrl+K to open command palette
   useEffect(() => {
@@ -142,11 +143,11 @@ export function Topbar({ user, profile }: TopbarProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <User className="h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <Settings className="h-4 w-4" />
                 Settings
               </DropdownMenuItem>

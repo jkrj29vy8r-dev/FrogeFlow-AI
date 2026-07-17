@@ -56,7 +56,7 @@ export function DashboardOverview({ user, profile, documents }: DashboardOvervie
       ?.split(" ")[0] ?? "there";
   const credits = profile?.credits ?? 0;
   const planLabel =
-    profile?.plan === "pro" ? "Pro" : profile?.plan === "enterprise" ? "Agency" : "Free";
+    profile?.plan === "pro" ? "Pro" : profile?.plan === "agency" ? "Agency" : "Free";
   const recentDocs = documents.slice(0, 5);
   const totalWords = documents.reduce((sum, d) => sum + (d.word_count ?? 0), 0);
 

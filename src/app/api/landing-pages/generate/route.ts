@@ -3,6 +3,8 @@ import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
 import { buildLandingPagePrompt } from "@/features/landing-pages/lib/prompts";
 import type { LandingPageInput, LandingPageSeo } from "@/types/landing-pages";
 import { DEFAULT_SECTIONS_BY_TYPE } from "@/types/landing-pages";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -34,6 +36,19 @@ export async function POST(request: Request): Promise<Response> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = await generationRateLimit(`landing-page:${user.id}`);
+  if (!rl.success) {
+    return Response.json({ error: "Too many requests. Please wait a moment." }, {
+      status: 429,
+      headers: rateLimitHeaders(rl),
+    });
+  }
+
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 2);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
+  }
 
   let body: unknown;
   try {
@@ -146,6 +161,7 @@ export async function POST(request: Request): Promise<Response> {
           .from("landing_page_sections" as never)
           .insert(sectionInserts as never);
 
+        await deductCredits(supabase, user.id, "landing_page_generated", { page_id: pageId });
         sse(controller, { type: "done", pageId });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Generation failed";
