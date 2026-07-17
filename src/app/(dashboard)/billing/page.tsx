@@ -67,11 +67,16 @@ const PLAN_ICONS = {
   agency: Building2,
 } as const;
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; canceled?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const params = await searchParams;
 
   let profile: Profile | null = null;
   if (user) {
@@ -88,6 +93,17 @@ export default async function BillingPage() {
 
   return (
     <div className="space-y-8">
+      {params.success && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+          🎉 Subscription activated! Your plan has been upgraded.
+        </div>
+      )}
+      {params.canceled && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          Checkout canceled. No charges were made.
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Billing</h1>

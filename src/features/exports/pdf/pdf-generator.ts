@@ -32,24 +32,14 @@ export interface PdfGenerationResult {
 export async function generatePdf(
   input: TemplateInput
 ): Promise<PdfGenerationResult> {
-  const { chromium } = await import("playwright");
+  const { launchBrowser } = await import("@/lib/browser/launch");
   const { settings } = input;
 
   const html = buildPdfHtml(input);
   const format = PAGE_FORMATS[settings.pageSize];
   const isLandscape = settings.orientation === "landscape";
 
-  // Launch Chromium (pre-installed at /opt/pw-browsers/chromium)
-  const browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH ?? "/opt/pw-browsers/chromium",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--font-render-hinting=none",
-    ],
-  });
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage();

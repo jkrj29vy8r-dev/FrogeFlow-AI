@@ -31,11 +31,8 @@ export async function GET(
 
   const html = buildCoverHtml(cover.content, 1);
 
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH ?? "/opt/pw-browsers/chromium",
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-  });
+  const { launchBrowser } = await import("@/lib/browser/launch");
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage();
