@@ -56,7 +56,7 @@ export default function NewCoverPage() {
     <div className="mx-auto max-w-lg py-12">
       <div className="mb-8 flex items-center gap-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--primary)/0.1)]">
-          <ImageIcon className="h-7 w-7 text-[hsl(var(--primary))]" aria-hidden="true" />
+          <ImageIcon className="h-7 w-7 text-[hsl(var(--primary))]" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">New Cover Design</h1>

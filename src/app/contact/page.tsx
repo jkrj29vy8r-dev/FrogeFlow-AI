@@ -33,15 +33,15 @@ export default function ContactPage() {
             </a>
 
             <a
-              href="mailto:support@bookforge.ai"
+              href="#"
               className="flex flex-col items-center gap-3 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 transition-all hover:border-[hsl(var(--primary)/0.3)] hover:shadow-sm"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--primary)/0.1)]">
                 <MessageCircle className="h-6 w-6 text-[hsl(var(--primary))]" />
               </div>
               <div>
-                <p className="font-semibold text-[hsl(var(--foreground))]">Support</p>
-                <p className="mt-0.5 text-sm text-[hsl(var(--muted-foreground))]">support@bookforge.ai</p>
+                <p className="font-semibold text-[hsl(var(--foreground))]">Live Chat</p>
+                <p className="mt-0.5 text-sm text-[hsl(var(--muted-foreground))]">Mon–Fri, 9am–5pm ET</p>
               </div>
             </a>
 

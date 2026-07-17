@@ -56,6 +56,16 @@ export function CoverEditor({ cover }: Props) {
     return () => window.removeEventListener('keydown', handler);
   });
 
+  const scheduleSave = useCallback((c: CoverContent) => {
+    setSaveStatus('saving');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      await updateCoverContent(cover.id, c);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 1500);
+  }, [cover.id]);
+
   const pushHistory = useCallback((newContent: CoverContent) => {
     setHistory(h => {
       const next = h.slice(0, histIdx + 1);
@@ -65,8 +75,7 @@ export function CoverEditor({ cover }: Props) {
     });
     setHistIdx(i => Math.min(i + 1, MAX_HISTORY - 1));
     scheduleSave(newContent);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [histIdx]);
+  }, [histIdx, scheduleSave]);
 
   function undo() {
     if (histIdx > 0) {
@@ -80,16 +89,6 @@ export function CoverEditor({ cover }: Props) {
       setHistIdx(i => i + 1);
       scheduleSave(history[histIdx + 1]);
     }
-  }
-
-  function scheduleSave(c: CoverContent) {
-    setSaveStatus('saving');
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      await updateCoverContent(cover.id, c);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 1500);
   }
 
   const handleUpdateElement = useCallback((id: string, updates: Partial<CoverElement>) => {
