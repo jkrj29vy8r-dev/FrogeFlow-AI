@@ -116,7 +116,7 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     // Stream PDF directly back
-    return new Response(result.buffer as unknown as BodyInit, {
+    return new Response(new Uint8Array(result.buffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
