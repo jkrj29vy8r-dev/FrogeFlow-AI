@@ -6,6 +6,7 @@ import {
   Sparkles,
   BookOpen,
   ChevronLeft,
+  ChevronRight,
   Download,
   Check,
   AlignLeft,
@@ -14,13 +15,35 @@ import {
   Eye,
   Layers,
   AlertCircle,
+  Menu,
+  X,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SectionEditor } from "./section-editor";
 import type { Section, DocumentWithGeneration } from "@/types/database";
-import { updateDocumentStatus } from "@/features/documents/actions/sections.actions";
+import {
+  updateDocumentStatus,
+  reorderSections,
+} from "@/features/documents/actions/sections.actions";
 
 const TYPE_LABELS: Record<string, string> = {
   ebook: "eBook",
@@ -86,8 +109,7 @@ function StatsBar({
 }) {
   const totalWords = sections.reduce((sum, s) => {
     const stripped = s.content.replace(/<[^>]+>/g, " ").trim();
-    const words = stripped.split(/\s+/).filter(Boolean).length;
-    return sum + words;
+    return sum + stripped.split(/\s+/).filter(Boolean).length;
   }, 0);
   const generated = sections.filter((s) => s.is_generated).length;
 
@@ -115,6 +137,54 @@ function StatsBar({
   );
 }
 
+// ── Sortable section wrapper ───────────────────────────────────────────────────
+
+function SortableSection({
+  section,
+  documentId,
+  isFocused,
+  onFocus,
+}: {
+  section: Section;
+  documentId: string;
+  isFocused: boolean;
+  onFocus: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    zIndex: isDragging ? 1 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      id={`section-${section.id}`}
+      className="scroll-mt-20"
+    >
+      <SectionEditor
+        section={section}
+        documentId={documentId}
+        isFocused={isFocused}
+        onFocus={onFocus}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface ContentEditorProps {
@@ -124,22 +194,28 @@ interface ContentEditorProps {
 
 export function ContentEditor({ document, initialSections }: ContentEditorProps) {
   const router = useRouter();
-  const [sections] = useState<Section[]>(initialSections);
+  const [sections, setSections] = useState(initialSections);
   const [activeId, setActiveId] = useState<string | null>(
     initialSections[0]?.id ?? null
   );
   const [focusMode, setFocusMode] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [tocOpen, setTocOpen] = useState(true);
+  const [mobileTocOpen, setMobileTocOpen] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // ── Fullscreen ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    const handler = () => {
-      setFullscreen(!!window.document.fullscreenElement);
-    };
+    const handler = () => setFullscreen(!!window.document.fullscreenElement);
     window.document.addEventListener("fullscreenchange", handler);
     return () => window.document.removeEventListener("fullscreenchange", handler);
   }, []);
@@ -155,7 +231,10 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
   // ── Keyboard shortcuts ────────────────────────────────────────────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && focusMode) setFocusMode(false);
+      if (e.key === "Escape") {
+        if (focusMode) setFocusMode(false);
+        if (mobileTocOpen) setMobileTocOpen(false);
+      }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
         e.preventDefault();
         void toggleFullscreen();
@@ -167,7 +246,7 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focusMode, toggleFullscreen]);
+  }, [focusMode, mobileTocOpen, toggleFullscreen]);
 
   // ── Scroll spy ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -182,22 +261,38 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
       },
       { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
     );
-
     sections.forEach((s) => {
       const el = window.document.getElementById(`section-${s.id}`);
       if (el) observer.observe(el);
     });
-
     return () => observer.disconnect();
   }, [sections]);
 
   const scrollToSection = useCallback((id: string) => {
     setActiveId(id);
+    setMobileTocOpen(false);
     window.document.getElementById(`section-${id}`)?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
   }, []);
+
+  // ── Drag & drop reorder ────────────────────────────────────────────────────────
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sections.findIndex((s) => s.id === active.id);
+      const newIndex = sections.findIndex((s) => s.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(sections, oldIndex, newIndex);
+      setSections(reordered);
+      await reorderSections(reordered.map((s) => s.id));
+    },
+    [sections]
+  );
 
   const handlePublish = useCallback(async () => {
     setIsPublishing(true);
@@ -210,6 +305,88 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
     return sum + stripped.split(/\s+/).filter(Boolean).length;
   }, 0);
 
+  // ── Sidebar content (shared between desktop sidebar and mobile drawer) ─────────
+  const tocContent = (
+    <>
+      <div className="border-b border-[hsl(var(--border))] px-4 py-3">
+        <div className="flex items-center justify-between">
+          <Link
+            href="/projects"
+            className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            Projects
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileTocOpen(false)}
+            className="rounded p-1 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {/* Breadcrumb */}
+        <nav aria-label="Breadcrumb" className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+          <Link href="/" className="hover:text-[hsl(var(--foreground))]">Home</Link>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <Link href="/projects" className="hover:text-[hsl(var(--foreground))]">Projects</Link>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <span className="truncate text-[hsl(var(--foreground))]">Editor</span>
+        </nav>
+        <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-[hsl(var(--foreground))]">
+          {document.title}
+        </p>
+        <span className="mt-1 inline-block rounded-full border border-[hsl(var(--border))] px-2 py-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">
+          {TYPE_LABELS[document.type] ?? document.type}
+        </span>
+      </div>
+
+      <StatsBar sections={sections} />
+
+      <nav className="flex-1 overflow-y-auto py-1">
+        <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--muted-foreground))]">
+          Contents
+        </p>
+        {sections.map((s, i) => (
+          <TocEntry
+            key={s.id}
+            section={s}
+            index={i}
+            isActive={activeId === s.id}
+            onClick={() => scrollToSection(s.id)}
+          />
+        ))}
+      </nav>
+
+      <div className="space-y-2 border-t border-[hsl(var(--border))] p-3">
+        <Button
+          size="sm"
+          className="w-full gap-2"
+          onClick={() => void handlePublish()}
+          disabled={isPublishing}
+        >
+          {isPublishing ? (
+            <>
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              Done
+            </>
+          )}
+        </Button>
+        <Button variant="outline" size="sm" asChild className="w-full gap-2">
+          <Link href="/exports">
+            <Download className="h-3.5 w-3.5" />
+            Export PDF
+          </Link>
+        </Button>
+      </div>
+    </>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -218,90 +395,44 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
         fullscreen && "fixed inset-0 z-50"
       )}
     >
-      {/* ── TOC Sidebar ───────────────────────────────────────────────────────── */}
+      {/* ── Desktop TOC Sidebar ───────────────────────────────────────────────── */}
       <aside
         className={cn(
           "hidden shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card)/0.5)] transition-all duration-300 lg:flex",
           tocOpen && !focusMode ? "w-56" : "w-0 overflow-hidden border-r-0"
         )}
       >
-        {/* Back + title */}
-        <div className="border-b border-[hsl(var(--border))] px-4 py-3">
-          <Link
-            href="/projects"
-            className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-            Projects
-          </Link>
-          <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-[hsl(var(--foreground))]">
-            {document.title}
-          </p>
-          <span className="mt-1 inline-block rounded-full border border-[hsl(var(--border))] px-2 py-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">
-            {TYPE_LABELS[document.type] ?? document.type}
-          </span>
-        </div>
-
-        {/* Stats */}
-        <StatsBar sections={sections} />
-
-        {/* Section nav */}
-        <nav className="flex-1 overflow-y-auto py-1">
-          <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--muted-foreground))]">
-            Contents
-          </p>
-          {sections.map((s, i) => (
-            <TocEntry
-              key={s.id}
-              section={s}
-              index={i}
-              isActive={activeId === s.id}
-              onClick={() => scrollToSection(s.id)}
-            />
-          ))}
-        </nav>
-
-        {/* Actions */}
-        <div className="space-y-2 border-t border-[hsl(var(--border))] p-3">
-          <Button
-            size="sm"
-            className="w-full gap-2"
-            onClick={() => void handlePublish()}
-            disabled={isPublishing}
-          >
-            {isPublishing ? (
-              <>
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Saving…
-              </>
-            ) : (
-              <>
-                <Check className="h-3.5 w-3.5" />
-                Done
-              </>
-            )}
-          </Button>
-          <Button variant="outline" size="sm" asChild className="w-full gap-2">
-            <Link href="/exports">
-              <Download className="h-3.5 w-3.5" />
-              Export PDF
-            </Link>
-          </Button>
-        </div>
+        {tocContent}
       </aside>
+
+      {/* ── Mobile TOC Drawer ─────────────────────────────────────────────────── */}
+      {mobileTocOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            onClick={() => setMobileTocOpen(false)}
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--background))] lg:hidden">
+            {tocContent}
+          </aside>
+        </>
+      )}
 
       {/* ── Main content ──────────────────────────────────────────────────────── */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Sticky topbar */}
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.92)] px-4 py-2 backdrop-blur-md">
-          {/* Left: mobile back + toc toggle */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/projects"
-              className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] lg:hidden"
+            {/* Mobile menu button */}
+            <button
+              type="button"
+              onClick={() => setMobileTocOpen(true)}
+              className="flex items-center justify-center rounded-lg p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] lg:hidden"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
+              <Menu className="h-4 w-4" />
+            </button>
+
+            {/* Desktop TOC toggle */}
             <button
               type="button"
               onClick={() => setTocOpen((o) => !o)}
@@ -314,15 +445,35 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
 
             <span className="hidden text-[hsl(var(--border))] lg:inline">|</span>
 
-            <p className="line-clamp-1 text-sm font-semibold text-[hsl(var(--foreground))]">
+            {/* Breadcrumb — desktop */}
+            <nav
+              aria-label="Breadcrumb"
+              className="hidden items-center gap-1 text-xs lg:flex"
+            >
+              <Link
+                href="/projects"
+                className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              >
+                Projects
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+              <span className="max-w-[12rem] truncate font-medium text-[hsl(var(--foreground))]">
+                {document.title}
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+              <span className="text-[hsl(var(--muted-foreground))]">Editor</span>
+            </nav>
+
+            {/* Mobile title */}
+            <p className="line-clamp-1 text-sm font-semibold text-[hsl(var(--foreground))] lg:hidden">
               {document.title}
             </p>
           </div>
 
-          {/* Right: stats + mode controls */}
           <div className="flex items-center gap-2">
             <StatsBar sections={sections} isCompact />
 
+            {/* Mode switcher */}
             <div className="flex items-center gap-0.5 rounded-lg border border-[hsl(var(--border))] p-0.5">
               <button
                 type="button"
@@ -372,7 +523,7 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
               disabled={isPublishing}
             >
               <Check className="h-3.5 w-3.5" />
-              Done
+              <span className="hidden sm:inline">Done</span>
             </Button>
           </div>
         </header>
@@ -397,12 +548,10 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
           <div
             className={cn(
               "mx-auto py-8 transition-all duration-300",
-              focusMode
-                ? "max-w-2xl px-6"
-                : "max-w-3xl px-4 sm:px-6"
+              focusMode ? "max-w-2xl px-6" : "max-w-3xl px-4 sm:px-6"
             )}
           >
-            {/* Document title */}
+            {/* Document header */}
             <div className="mb-8">
               <div className="mb-1.5 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-[hsl(var(--primary))]" />
@@ -433,23 +582,28 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
               </div>
             ) : (
               <>
-                {/* Sections */}
-                <div className="space-y-6">
-                  {sections.map((section) => (
-                    <div
-                      key={section.id}
-                      id={`section-${section.id}`}
-                      className="scroll-mt-20"
-                    >
-                      <SectionEditor
-                        section={section}
-                        documentId={document.id}
-                        isFocused={!focusMode || activeId === section.id}
-                        onFocus={() => setActiveId(section.id)}
-                      />
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(e) => void handleDragEnd(e)}
+                >
+                  <SortableContext
+                    items={sections.map((s) => s.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-6">
+                      {sections.map((section) => (
+                        <SortableSection
+                          key={section.id}
+                          section={section}
+                          documentId={document.id}
+                          isFocused={!focusMode || activeId === section.id}
+                          onFocus={() => setActiveId(section.id)}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
 
                 {/* Bottom actions */}
                 <div className="mt-10 flex items-center justify-between border-t border-[hsl(var(--border))] pt-6">

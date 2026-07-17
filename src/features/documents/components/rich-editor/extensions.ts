@@ -13,6 +13,7 @@ import CharacterCount from "@tiptap/extension-character-count";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { createLowlight, common as grammars } from "lowlight";
 import type { Extensions } from "@tiptap/core";
+import { Callout } from "./callout-extension";
 
 const lowlight = createLowlight(grammars);
 
@@ -48,6 +49,8 @@ export function buildExtensions(placeholder?: string): Extensions {
     TableHeader,
 
     CodeBlockLowlight.configure({ lowlight }),
+
+    Callout,
 
     CharacterCount,
 

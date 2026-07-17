@@ -361,3 +361,60 @@ html {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* ── Callout blocks ──────────────────────────────────────────────────────── */
+
+.prose-editor .ProseMirror [data-callout] {
+  border-radius: 8px;
+  padding: 0.875rem 1rem 0.875rem 1.125rem;
+  margin: 1rem 0;
+  border-left: 4px solid;
+  font-size: 0.9rem;
+  position: relative;
+}
+.prose-editor .ProseMirror [data-callout] > * {
+  margin-bottom: 0.25rem;
+}
+.prose-editor .ProseMirror [data-callout] > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Info */
+.prose-editor .ProseMirror [data-callout][data-callout-type="info"] {
+  background: hsl(213 94% 68% / 0.08);
+  border-color: hsl(213 94% 55%);
+  color: hsl(var(--foreground));
+}
+.dark .prose-editor .ProseMirror [data-callout][data-callout-type="info"] {
+  background: hsl(213 94% 68% / 0.12);
+}
+
+/* Warning */
+.prose-editor .ProseMirror [data-callout][data-callout-type="warning"] {
+  background: hsl(38 92% 50% / 0.08);
+  border-color: hsl(38 92% 50%);
+  color: hsl(var(--foreground));
+}
+.dark .prose-editor .ProseMirror [data-callout][data-callout-type="warning"] {
+  background: hsl(38 92% 50% / 0.12);
+}
+
+/* Success */
+.prose-editor .ProseMirror [data-callout][data-callout-type="success"] {
+  background: hsl(142 70% 45% / 0.08);
+  border-color: hsl(142 70% 45%);
+  color: hsl(var(--foreground));
+}
+.dark .prose-editor .ProseMirror [data-callout][data-callout-type="success"] {
+  background: hsl(142 70% 45% / 0.12);
+}
+
+/* Tip */
+.prose-editor .ProseMirror [data-callout][data-callout-type="tip"] {
+  background: hsl(var(--primary) / 0.07);
+  border-color: hsl(var(--primary));
+  color: hsl(var(--foreground));
+}
+.dark .prose-editor .ProseMirror [data-callout][data-callout-type="tip"] {
+  background: hsl(var(--primary) / 0.12);
+}

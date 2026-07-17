@@ -145,6 +145,29 @@ export async function deductGenerationCredit(
   return {};
 }
 
+// ── Reorder sections ──────────────────────────────────────────────────────────
+
+export async function reorderSections(
+  orderedIds: string[]
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const updates = orderedIds.map((id, index) =>
+    supabase
+      .from("sections" as never)
+      .update({ position: index } as never)
+      .eq("id", id)
+      .eq("user_id", user.id)
+  );
+
+  const results = await Promise.all(updates);
+  const failed = results.find((r) => (r as { error: unknown }).error);
+  if (failed) return { error: "Failed to reorder sections" };
+  return {};
+}
+
 // ── Get sections for a document ───────────────────────────────────────────────
 
 export async function getDocumentSections(
