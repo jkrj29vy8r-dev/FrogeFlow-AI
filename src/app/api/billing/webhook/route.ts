@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getStripe } from "@/lib/stripe/client";
