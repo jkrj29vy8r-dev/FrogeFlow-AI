@@ -22,7 +22,7 @@ const PLANS = [
   },
   {
     name: "Pro",
-    price: "$19",
+    price: "$29",
     period: "/ month",
     description: "For solo creators who publish regularly.",
     cta: "Start Pro trial",
@@ -40,11 +40,11 @@ const PLANS = [
   },
   {
     name: "Agency",
-    price: "$79",
+    price: "$99",
     period: "/ month",
     description: "For teams and high-volume publishers.",
     cta: "Contact sales",
-    href: "/sign-up?plan=enterprise",
+    href: "/sign-up?plan=agency",
     popular: false,
     features: [
       "500 AI credits / month",
