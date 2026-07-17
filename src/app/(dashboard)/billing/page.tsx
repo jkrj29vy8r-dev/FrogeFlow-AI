@@ -131,6 +131,17 @@ export default async function BillingPage() {
             </p>
           </div>
         </div>
+
+        {currentPlan !== "free" && (
+          <div className="mt-4 flex justify-end">
+            <Link
+              href="/api/billing/portal"
+              className="rounded-lg border border-[hsl(var(--border))] px-4 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
+            >
+              Manage subscription →
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Plans */}
