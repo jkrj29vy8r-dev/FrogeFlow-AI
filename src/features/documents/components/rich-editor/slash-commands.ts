@@ -120,6 +120,52 @@ export const SLASH_ITEMS: SlashItem[] = [
     execute: (editor, range) =>
       editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
   },
+  {
+    title: "Callout — Info",
+    description: "Blue informational callout block",
+    icon: "ℹ",
+    keywords: ["callout", "info", "note", "block"],
+    execute: (editor, range) =>
+      editor.chain().focus().deleteRange(range).setCallout({ type: "info" }).run(),
+  },
+  {
+    title: "Callout — Warning",
+    description: "Yellow warning callout block",
+    icon: "⚠",
+    keywords: ["callout", "warning", "caution", "alert"],
+    execute: (editor, range) =>
+      editor.chain().focus().deleteRange(range).setCallout({ type: "warning" }).run(),
+  },
+  {
+    title: "Callout — Success",
+    description: "Green success callout block",
+    icon: "✓",
+    keywords: ["callout", "success", "tip", "green"],
+    execute: (editor, range) =>
+      editor.chain().focus().deleteRange(range).setCallout({ type: "success" }).run(),
+  },
+  {
+    title: "Callout — Tip",
+    description: "Purple tip callout block",
+    icon: "💡",
+    keywords: ["callout", "tip", "purple", "hint"],
+    execute: (editor, range) =>
+      editor.chain().focus().deleteRange(range).setCallout({ type: "tip" }).run(),
+  },
+  {
+    title: "Image",
+    description: "Embed an image by URL",
+    icon: "🖼",
+    keywords: ["image", "img", "photo", "picture", "embed"],
+    execute: (editor, range) => {
+      const url = window.prompt("Image URL:");
+      if (!url) {
+        editor.chain().focus().deleteRange(range).run();
+        return;
+      }
+      editor.chain().focus().deleteRange(range).setImage({ src: url }).run();
+    },
+  },
 ];
 
 export function filterSlashItems(query: string): SlashItem[] {

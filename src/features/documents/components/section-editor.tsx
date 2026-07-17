@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   RotateCcw,
   History,
@@ -12,6 +12,11 @@ import {
   AlertCircle,
   Maximize2,
   Minimize2,
+  Undo2,
+  Redo2,
+  Eye,
+  Pencil,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatRelativeTime } from "@/lib/utils";
@@ -19,8 +24,8 @@ import { useAutosave } from "@/features/documents/hooks/use-autosave";
 import {
   getSectionVersions,
   restoreSectionVersion,
+  deductGenerationCredit,
 } from "@/features/documents/actions/sections.actions";
-import { deductGenerationCredit } from "@/features/documents/actions/sections.actions";
 import type { Section, SectionVersion } from "@/types/database";
 import type { SectionStreamEvent } from "@/features/documents/types";
 import { RichTextEditor, plainTextToHtml } from "./rich-editor";
@@ -42,6 +47,7 @@ interface SectionEditorProps {
   documentId: string;
   isFocused?: boolean;
   onFocus?: () => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 export function SectionEditor({
@@ -49,6 +55,7 @@ export function SectionEditor({
   documentId,
   isFocused = true,
   onFocus,
+  dragHandleProps,
 }: SectionEditorProps) {
   const [content, setContent] = useState(section.content);
   const [showHistory, setShowHistory] = useState(false);
@@ -58,6 +65,9 @@ export function SectionEditor({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
+  const saveFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<RichTextEditorHandle>(null);
 
   const { status: autosaveStatus } = useAutosave(
@@ -66,6 +76,17 @@ export function SectionEditor({
     content,
     !isRegenerating
   );
+
+  // Trigger success flash when status transitions to "saved"
+  const prevStatus = useRef(autosaveStatus);
+  useEffect(() => {
+    if (prevStatus.current !== "saved" && autosaveStatus === "saved") {
+      if (saveFlashTimer.current) clearTimeout(saveFlashTimer.current);
+      setSaveFlash(true);
+      saveFlashTimer.current = setTimeout(() => setSaveFlash(false), 1500);
+    }
+    prevStatus.current = autosaveStatus;
+  }, [autosaveStatus]);
 
   const wordCount = content
     .replace(/<[^>]+>/g, " ")
@@ -141,7 +162,6 @@ export function SectionEditor({
             const event = JSON.parse(raw) as SectionStreamEvent;
             if (event.type === "token") {
               newContent += event.text;
-              // Live update via ref to avoid re-mounting editor
               const html = plainTextToHtml(newContent);
               editorRef.current?.setContent(html);
               setContent(html);
@@ -173,7 +193,7 @@ export function SectionEditor({
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-[hsl(var(--card))] transition-all duration-200",
+        "group/section rounded-2xl border bg-[hsl(var(--card))] transition-all duration-200",
         isFocused
           ? "border-[hsl(var(--border))] shadow-sm"
           : "border-transparent opacity-60 hover:opacity-80",
@@ -182,8 +202,18 @@ export function SectionEditor({
       onClick={onFocus}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-5 py-3">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          {/* Drag handle */}
+          <div
+            {...dragHandleProps}
+            className="hidden cursor-grab touch-none items-center text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover/section:opacity-60 active:cursor-grabbing lg:flex"
+            title="Drag to reorder"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+
           <span className="rounded-full bg-[hsl(var(--primary)/0.1)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--primary))]">
             {SECTION_TYPE_LABELS[section.section_type] ?? section.section_type}
           </span>
@@ -192,37 +222,72 @@ export function SectionEditor({
           </h3>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {/* Autosave indicator */}
-          <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+          <span className="min-w-[4.5rem] text-right text-[10px]">
             {autosaveStatus === "saving" && (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center justify-end gap-1 text-[hsl(var(--muted-foreground))]">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Saving…
               </span>
             )}
             {autosaveStatus === "saved" && (
-              <span className="flex items-center gap-1 text-emerald-500">
+              <span
+                className={cn(
+                  "flex items-center justify-end gap-1 transition-colors duration-700",
+                  saveFlash ? "text-emerald-500" : "text-[hsl(var(--muted-foreground))]"
+                )}
+              >
                 <Check className="h-3 w-3" />
                 Saved
               </span>
             )}
             {autosaveStatus === "error" && (
-              <span className="flex items-center gap-1 text-[hsl(var(--destructive))]">
+              <span className="flex items-center justify-end gap-1 text-[hsl(var(--destructive))]">
                 <AlertCircle className="h-3 w-3" />
                 Error
               </span>
             )}
           </span>
 
+          {/* Undo / Redo */}
+          <button
+            type="button"
+            title="Undo (⌘Z)"
+            onClick={(e) => { e.stopPropagation(); editorRef.current?.undo(); }}
+            className="flex h-7 w-7 items-center justify-center rounded text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Redo (⌘⇧Z)"
+            onClick={(e) => { e.stopPropagation(); editorRef.current?.redo(); }}
+            className="flex h-7 w-7 items-center justify-center rounded text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Preview / Edit toggle */}
+          <button
+            type="button"
+            title={isPreview ? "Switch to edit" : "Preview"}
+            onClick={(e) => { e.stopPropagation(); setIsPreview((p) => !p); }}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded transition-colors",
+              isPreview
+                ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
+            )}
+          >
+            {isPreview ? <Pencil className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+
           {/* Regenerate */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              void handleRegenerate();
-            }}
+            onClick={(e) => { e.stopPropagation(); void handleRegenerate(); }}
             disabled={isRegenerating}
             className="h-7 gap-1.5 px-2 text-xs"
             title="Regenerate this section with AI"
@@ -239,10 +304,7 @@ export function SectionEditor({
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              void loadVersionHistory();
-            }}
+            onClick={(e) => { e.stopPropagation(); void loadVersionHistory(); }}
             disabled={loadingHistory}
             className="h-7 gap-1 px-2 text-xs"
             title="Version history"
@@ -260,14 +322,10 @@ export function SectionEditor({
           </Button>
 
           {/* Expand / collapse */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded((x) => !x);
-            }}
-            className="h-7 w-7 p-0"
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsExpanded((x) => !x); }}
+            className="flex h-7 w-7 items-center justify-center rounded text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
             title={isExpanded ? "Collapse" : "Expand"}
           >
             {isExpanded ? (
@@ -275,7 +333,7 @@ export function SectionEditor({
             ) : (
               <Maximize2 className="h-3.5 w-3.5" />
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -345,16 +403,23 @@ export function SectionEditor({
         </div>
       )}
 
-      {/* Rich text editor */}
+      {/* Editor / Preview */}
       <div className="px-6 py-5">
-        <RichTextEditor
-          ref={editorRef}
-          initialContent={content}
-          onChange={setContent}
-          disabled={isRegenerating}
-          placeholder={`Start writing ${section.title}…`}
-          className={cn(isRegenerating && "prose-editor-regenerating")}
-        />
+        {isPreview ? (
+          <div
+            className="prose-editor min-h-[120px]"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        ) : (
+          <RichTextEditor
+            ref={editorRef}
+            initialContent={content}
+            onChange={setContent}
+            disabled={isRegenerating}
+            placeholder={`Start writing ${section.title}…`}
+            className={cn(isRegenerating && "prose-editor-regenerating")}
+          />
+        )}
       </div>
 
       {/* Footer */}

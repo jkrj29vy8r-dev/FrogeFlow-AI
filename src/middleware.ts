@@ -15,6 +15,9 @@ const PROTECTED_PATHS = [
   "/exports",
   "/help",
   "/ai-generator",
+  "/generate",
+  "/covers",
+  "/landing-pages",
   "/admin",
 ];
 const AUTH_PATHS = ["/sign-in", "/sign-up", "/forgot-password"];

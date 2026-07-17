@@ -72,6 +72,8 @@ export interface RichTextEditorHandle {
   setContent: (html: string) => void;
   getHtml: () => string;
   focus: () => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 interface RichTextEditorProps {
@@ -513,6 +515,12 @@ export const RichTextEditor = forwardRef<
     },
     focus() {
       editor?.commands.focus();
+    },
+    undo() {
+      editor?.commands.undo();
+    },
+    redo() {
+      editor?.commands.redo();
     },
   }));
 

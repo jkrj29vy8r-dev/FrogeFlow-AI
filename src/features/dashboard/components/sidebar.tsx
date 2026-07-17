@@ -15,6 +15,9 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  Globe,
+  Zap,
+  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/features/auth/actions/auth.actions";
@@ -33,6 +36,9 @@ const navItems = [
   { label: "Templates", href: "/templates", icon: LayoutTemplate },
   { label: "AI Generator", href: "/new", icon: Sparkles },
   { label: "Documents", href: "/documents", icon: FileText },
+  { label: "Generate Business", href: "/generate", icon: Zap },
+  { label: "Cover Studio", href: "/covers", icon: Image },
+  { label: "Landing Pages", href: "/landing-pages", icon: Globe },
   { label: "Exports", href: "/exports", icon: Download },
 ] as const;
 
