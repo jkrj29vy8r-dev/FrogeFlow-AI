@@ -28,6 +28,7 @@ export interface UseGenerationReturn {
   sectionProgress: SectionProgress[];
   currentSectionIndex: number;
   error: string | null;
+  isCancelling: boolean;
   generateOutline: () => Promise<void>;
   generateContent: (sections: Section[]) => Promise<void>;
   cancel: () => void;
@@ -46,6 +47,7 @@ export function useGeneration(
   const [sectionProgress, setSectionProgress] = useState<SectionProgress[]>([]);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const lastActionRef = useRef<(() => Promise<void>) | null>(null);
@@ -135,6 +137,7 @@ export function useGeneration(
     setPhase("generating_outline");
     setOutlineText("");
     setError(null);
+    setIsCancelling(false);
 
     const action = async () => {
       try {
@@ -159,10 +162,12 @@ export function useGeneration(
       } catch (err) {
         if ((err as Error).name === "AbortError") {
           setPhase("cancelled");
-          await updateDocumentStatus(documentId, "cancelled");
+          setIsCancelling(false);
+          void updateDocumentStatus(documentId, "cancelled");
         } else {
           setError(err instanceof Error ? err.message : "Generation failed");
           setPhase("failed");
+          setIsCancelling(false);
         }
       }
     };
@@ -182,6 +187,7 @@ export function useGeneration(
 
       setPhase("generating_content");
       setError(null);
+      setIsCancelling(false);
       await updateDocumentStatus(documentId, "generating_content");
 
       // Initialize progress
@@ -248,11 +254,13 @@ export function useGeneration(
         } catch (err) {
           if ((err as Error).name === "AbortError") {
             setPhase("cancelled");
-            await updateDocumentStatus(documentId, "cancelled");
+            setIsCancelling(false);
+            void updateDocumentStatus(documentId, "cancelled");
           } else {
             setError(err instanceof Error ? err.message : "Generation failed");
             setPhase("failed");
-            await updateDocumentStatus(documentId, "failed");
+            setIsCancelling(false);
+            void updateDocumentStatus(documentId, "failed");
           }
         }
       };
@@ -264,11 +272,16 @@ export function useGeneration(
   );
 
   const cancel = useCallback(() => {
+    // Give instant visual feedback regardless of network conditions — the
+    // actual phase flips to "cancelled" as soon as the abort propagates
+    // through the fetch/reader, which doesn't depend on any server round-trip.
+    setIsCancelling(true);
     abortRef.current?.abort();
   }, []);
 
   const retry = useCallback(() => {
     setError(null);
+    setIsCancelling(false);
     if (lastActionRef.current) {
       void lastActionRef.current();
     }
@@ -281,6 +294,7 @@ export function useGeneration(
     sectionProgress,
     currentSectionIndex,
     error,
+    isCancelling,
     generateOutline,
     generateContent,
     cancel,

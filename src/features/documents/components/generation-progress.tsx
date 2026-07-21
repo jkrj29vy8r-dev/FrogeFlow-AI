@@ -8,9 +8,10 @@ import type { SectionProgress } from "@/features/documents/hooks/use-generation"
 interface OutlineGeneratingProps {
   text: string;
   onCancel: () => void;
+  isCancelling?: boolean;
 }
 
-export function OutlineGenerating({ text, onCancel }: OutlineGeneratingProps) {
+export function OutlineGenerating({ text, onCancel, isCancelling }: OutlineGeneratingProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       {/* Animated orb */}
@@ -38,8 +39,8 @@ export function OutlineGenerating({ text, onCancel }: OutlineGeneratingProps) {
         </div>
       )}
 
-      <Button variant="outline" size="sm" onClick={onCancel}>
-        Cancel
+      <Button variant="outline" size="sm" onClick={onCancel} disabled={isCancelling}>
+        {isCancelling ? "Cancelling…" : "Cancel"}
       </Button>
     </div>
   );
@@ -49,12 +50,14 @@ interface ContentGeneratingProps {
   progress: SectionProgress[];
   currentIndex: number;
   onCancel: () => void;
+  isCancelling?: boolean;
 }
 
 export function ContentGenerating({
   progress,
   currentIndex: _currentIndex,
   onCancel,
+  isCancelling,
 }: ContentGeneratingProps) {
   const completed = progress.filter((p) => p.status === "completed").length;
   const total = progress.length;
@@ -80,8 +83,8 @@ export function ContentGenerating({
             {completed} of {total} sections complete · {timeLabel}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={onCancel}>
-          Cancel
+        <Button variant="outline" size="sm" onClick={onCancel} disabled={isCancelling}>
+          {isCancelling ? "Cancelling…" : "Cancel"}
         </Button>
       </div>
 

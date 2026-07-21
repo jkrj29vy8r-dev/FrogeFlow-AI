@@ -127,6 +127,7 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
     sectionProgress,
     currentSectionIndex,
     error,
+    isCancelling,
     generateOutline,
     generateContent,
     cancel,
@@ -199,7 +200,7 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
 
       {/* Generating outline */}
       {phase === "generating_outline" && (
-        <OutlineGenerating text={outlineText} onCancel={cancel} />
+        <OutlineGenerating text={outlineText} onCancel={cancel} isCancelling={isCancelling} />
       )}
 
       {/* Generating content */}
@@ -208,6 +209,7 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
           progress={sectionProgress}
           currentIndex={currentSectionIndex}
           onCancel={cancel}
+          isCancelling={isCancelling}
         />
       )}
 
