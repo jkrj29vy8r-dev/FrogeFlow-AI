@@ -267,7 +267,7 @@ export function TemplatesView() {
                   ) : (
                     <Link
                       href={tpl.href}
-                      className="flex items-center gap-1 text-[10px] font-medium text-[hsl(var(--primary))] opacity-0 transition-opacity group-hover:opacity-100"
+                      className="flex items-center gap-1 text-[10px] font-medium text-[hsl(var(--primary))] opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       Use <ArrowRight className="h-3 w-3" />
                     </Link>

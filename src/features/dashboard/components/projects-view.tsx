@@ -62,14 +62,14 @@ const TYPE_COLORS: Record<string, string> = {
   checklist: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
 };
 
-interface DocActionsProps {
+export interface DocActionsProps {
   doc: Document;
   onRenamed: (id: string, title: string) => void;
   onDeleted: (id: string) => void;
   onDuplicated: (newId: string) => void;
 }
 
-function DocActions({ doc, onRenamed, onDeleted, onDuplicated }: DocActionsProps) {
+export function DocActions({ doc, onRenamed, onDeleted, onDuplicated }: DocActionsProps) {
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(doc.title);
 
@@ -111,7 +111,7 @@ function DocActions({ doc, onRenamed, onDeleted, onDuplicated }: DocActionsProps
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]">
+        <div className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] opacity-100 transition-opacity hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <MoreHorizontal className="h-4 w-4" />
         </div>
       </DropdownMenuTrigger>

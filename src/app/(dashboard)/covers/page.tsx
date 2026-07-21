@@ -133,8 +133,8 @@ export default async function CoversPage() {
                 </div>
               </div>
 
-              {/* Hover actions */}
-              <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              {/* Actions — always visible on touch, hover-reveal on pointer devices */}
+              <div className="absolute right-2 top-2 flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 <Link
                   href={`/covers/${cover.id}/editor`}
                   className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 backdrop-blur-sm transition-colors hover:bg-black/80"
