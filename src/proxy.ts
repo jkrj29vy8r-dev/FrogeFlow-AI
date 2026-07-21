@@ -43,7 +43,7 @@ function detectLocale(request: NextRequest): string {
   return defaultLocale;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // API routes: pass through without any locale handling
