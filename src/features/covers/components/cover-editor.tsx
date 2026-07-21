@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useLayoutEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { Undo2, Redo2, Save, Download, Check, ChevronLeft } from "lucide-react";
+import { Undo2, Redo2, Save, Download, Check, ChevronLeft, Sparkles, Sliders, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Cover, CoverContent, CoverElement, CoverBackground, CoverInput } from "@/types/covers";
 import { CoverCanvas, CANVAS_W, CANVAS_H } from "./cover-canvas";
@@ -26,6 +26,7 @@ export function CoverEditor({ cover }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showExport, setShowExport] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'none' | 'left' | 'right'>('none');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const content = history[histIdx] ?? cover.content;
@@ -118,35 +119,78 @@ export function CoverEditor({ cover }: Props) {
   return (
     <>
       <div
-        className="-mx-4 -my-4 flex overflow-x-auto overflow-y-hidden sm:-mx-6 sm:-my-6 lg:-mx-8"
+        className="-mx-4 -my-4 flex overflow-hidden sm:-mx-6 sm:-my-6 lg:-mx-8"
         style={{ height: 'calc(100vh - 56px)' }}
       >
-        <LeftPanel
-          coverInput={coverInput}
-          currentContent={content}
-          onApply={handleApplyContent}
-        />
+        {/* Left panel — static on desktop, slide-in drawer on mobile */}
+        {mobilePanel === 'left' && (
+          <div
+            onClick={() => setMobilePanel('none')}
+            aria-hidden="true"
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          />
+        )}
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:translate-x-0",
+            mobilePanel === 'left' ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <div className="flex h-10 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 lg:hidden">
+            <span className="text-xs font-semibold text-[hsl(var(--foreground))]">Design</span>
+            <button
+              onClick={() => setMobilePanel('none')}
+              aria-label="Close design panel"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="h-[calc(100%-40px)] lg:h-full">
+            <LeftPanel
+              coverInput={coverInput}
+              currentContent={content}
+              onApply={(c) => { handleApplyContent(c); setMobilePanel('none'); }}
+            />
+          </div>
+        </div>
 
         {/* Canvas Area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Toolbar */}
-          <div className="flex h-11 shrink-0 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4">
-            <div className="flex items-center gap-2">
+          <div className="flex h-11 shrink-0 items-center justify-between gap-2 overflow-x-auto border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 sm:px-4">
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={() => router.push('/covers')}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
+                className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))] sm:px-2.5"
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> Covers
+                <ChevronLeft className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Covers</span>
               </button>
-              <span className="text-xs font-medium text-[hsl(var(--foreground))]">{cover.name}</span>
+              <span className="max-w-[100px] truncate text-xs font-medium text-[hsl(var(--foreground))] sm:max-w-none">{cover.name}</span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1">
+              {/* Mobile-only panel toggles */}
+              <button
+                onClick={() => setMobilePanel('left')}
+                title="Design"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[hsl(var(--accent))] lg:hidden"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--foreground))]" />
+              </button>
+              <button
+                onClick={() => setMobilePanel('right')}
+                title="Style"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[hsl(var(--accent))] lg:hidden"
+              >
+                <Sliders className="h-3.5 w-3.5 text-[hsl(var(--foreground))]" />
+              </button>
+
               <button
                 onClick={undo}
                 disabled={histIdx === 0}
                 title="Undo (Cmd+Z)"
-                className="rounded-lg p-1.5 transition-colors hover:bg-[hsl(var(--accent))] disabled:opacity-40"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[hsl(var(--accent))] disabled:opacity-40"
               >
                 <Undo2 className="h-3.5 w-3.5 text-[hsl(var(--foreground))]" />
               </button>
@@ -154,11 +198,11 @@ export function CoverEditor({ cover }: Props) {
                 onClick={redo}
                 disabled={histIdx >= history.length - 1}
                 title="Redo (Cmd+Y)"
-                className="rounded-lg p-1.5 transition-colors hover:bg-[hsl(var(--accent))] disabled:opacity-40"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[hsl(var(--accent))] disabled:opacity-40"
               >
                 <Redo2 className="h-3.5 w-3.5 text-[hsl(var(--foreground))]" />
               </button>
-              <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-all",
+              <div className={cn("hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-all sm:flex",
                 saveStatus === 'saving' ? "text-[hsl(var(--muted-foreground))]" :
                 saveStatus === 'saved' ? "text-green-600" : "text-transparent"
               )}>
@@ -167,9 +211,9 @@ export function CoverEditor({ cover }: Props) {
               </div>
               <button
                 onClick={() => setShowExport(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-[hsl(var(--primary))] px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 sm:px-3"
               >
-                <Download className="h-3.5 w-3.5" /> Export
+                <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
               </button>
             </div>
           </div>
@@ -208,12 +252,39 @@ export function CoverEditor({ cover }: Props) {
           </div>
         </div>
 
-        <RightPanel
-          content={content}
-          selectedId={selectedId}
-          onUpdateElement={handleUpdateElement}
-          onUpdateBackground={handleUpdateBackground}
-        />
+        {/* Right panel — static on desktop, slide-in drawer on mobile */}
+        {mobilePanel === 'right' && (
+          <div
+            onClick={() => setMobilePanel('none')}
+            aria-hidden="true"
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          />
+        )}
+        <div
+          className={cn(
+            "fixed inset-y-0 right-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:translate-x-0",
+            mobilePanel === 'right' ? "translate-x-0" : "translate-x-full"
+          )}
+        >
+          <div className="flex h-10 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 lg:hidden">
+            <span className="text-xs font-semibold text-[hsl(var(--foreground))]">Style</span>
+            <button
+              onClick={() => setMobilePanel('none')}
+              aria-label="Close style panel"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="h-[calc(100%-40px)] lg:h-full">
+            <RightPanel
+              content={content}
+              selectedId={selectedId}
+              onUpdateElement={handleUpdateElement}
+              onUpdateBackground={handleUpdateBackground}
+            />
+          </div>
+        </div>
       </div>
 
       {showExport && (
