@@ -10,10 +10,14 @@ export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !key) {
+  if (!url || !/^https?:\/\//.test(url)) {
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — cannot create admin client"
+      `NEXT_PUBLIC_SUPABASE_URL is not a valid URL (got: "${url ?? "undefined"}"). ` +
+        "Check that the Supabase URL and key env vars are not swapped."
     );
+  }
+  if (!key) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY — cannot create admin client");
   }
 
   return createSupabaseClient<Database>(url, key, {
