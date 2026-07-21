@@ -164,6 +164,7 @@ export async function POST(request: Request): Promise<Response> {
         await deductCredits(supabase, user.id, "landing_page_generated", { page_id: pageId });
         sse(controller, { type: "done", pageId });
       } catch (err) {
+        console.error("[landing-pages/generate] failed:", err);
         const message = err instanceof Error ? err.message : "Generation failed";
         sse(controller, { type: "error", message });
       } finally {

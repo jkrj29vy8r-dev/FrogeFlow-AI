@@ -109,6 +109,7 @@ export async function POST(request: Request): Promise<Response> {
           encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`)
         );
       } catch (err) {
+        console.error("[edit-text] failed:", err);
         const message = err instanceof Error ? err.message : "AI editing failed";
         controller.enqueue(
           encoder.encode(

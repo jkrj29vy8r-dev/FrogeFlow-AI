@@ -4,8 +4,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe/client";
-import { STRIPE_PRICES } from "@/lib/stripe/prices";
-import { env } from "@/lib/env";
+import { getStripePrices } from "@/lib/stripe/prices";
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -20,13 +19,18 @@ export async function GET(req: NextRequest) {
   const priceKey = plan === "pro" ? "pro_monthly" : plan === "agency" ? "agency_monthly" : null;
   if (!priceKey) return NextResponse.redirect(new URL("/billing", req.url));
 
-  const priceId = STRIPE_PRICES[priceKey];
-  if (!priceId) {
-    return NextResponse.json({ error: "Price not configured" }, { status: 500 });
+  let priceId: string;
+  try {
+    priceId = getStripePrices()[priceKey];
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Price not configured" },
+      { status: 500 }
+    );
   }
 
   const stripe = getStripe();
-  const appUrl = env.NEXT_PUBLIC_APP_URL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin;
 
   // Get or create stripe customer
   const { data: profile } = await supabase

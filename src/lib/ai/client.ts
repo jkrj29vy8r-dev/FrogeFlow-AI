@@ -1,11 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { env } from "@/lib/env";
 
 let _anthropic: Anthropic | null = null;
 
 export function getAnthropic(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "ANTHROPIC_API_KEY is not set. Add it to your deployment's environment variables."
+      );
+    }
+    _anthropic = new Anthropic({ apiKey });
   }
   return _anthropic;
 }

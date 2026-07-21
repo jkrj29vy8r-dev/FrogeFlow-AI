@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe/client";
-import { env } from "@/lib/env";
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -23,9 +22,10 @@ export async function GET(req: NextRequest) {
   }
 
   const stripe = getStripe();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin;
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${env.NEXT_PUBLIC_APP_URL}/billing`,
+    return_url: `${appUrl}/billing`,
   });
 
   return NextResponse.redirect(session.url);

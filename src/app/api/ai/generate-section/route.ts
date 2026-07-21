@@ -203,6 +203,7 @@ export async function POST(request: Request): Promise<Response> {
 
         send(controller, { type: "done", wordCount });
       } catch (err) {
+        console.error("[generate-section] failed:", err);
         const message = err instanceof Error ? err.message : "Generation failed";
 
         await supabase

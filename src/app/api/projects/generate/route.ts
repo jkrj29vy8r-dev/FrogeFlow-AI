@@ -264,6 +264,7 @@ export async function POST(request: Request): Promise<Response> {
         await deductCredits(supabase, user.id, "project_generated", { project_id: projectId });
         sse(controller, { type: "done", projectId });
       } catch (err) {
+        console.error("[projects/generate] failed:", err);
         sse(controller, { type: "error", message: err instanceof Error ? err.message : "Unknown error" });
         await (supabase as never as {
           from: (t: string) => { update: (d: object) => { eq: (a: string, b: string) => Promise<unknown> } }

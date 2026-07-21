@@ -82,6 +82,7 @@ export async function POST(
 
     return Response.json({ content: newContent });
   } catch (err) {
+    console.error("[landing-pages/section] failed:", err);
     const message = err instanceof Error ? err.message : "Regeneration failed";
     return Response.json({ error: message }, { status: 500 });
   }

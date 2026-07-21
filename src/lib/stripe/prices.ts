@@ -1,11 +1,15 @@
-import { env } from "@/lib/env";
+export type StripePriceKey = "pro_monthly" | "agency_monthly";
 
-export const STRIPE_PRICES = {
-  pro_monthly: env.STRIPE_PRICE_PRO_MONTHLY,
-  agency_monthly: env.STRIPE_PRICE_AGENCY_MONTHLY,
-} as const;
-
-export type StripePriceKey = keyof typeof STRIPE_PRICES;
+export function getStripePrices(): Record<StripePriceKey, string> {
+  const pro = process.env.STRIPE_PRICE_PRO_MONTHLY;
+  const agency = process.env.STRIPE_PRICE_AGENCY_MONTHLY;
+  if (!pro || !agency) {
+    throw new Error(
+      "STRIPE_PRICE_PRO_MONTHLY or STRIPE_PRICE_AGENCY_MONTHLY is not set. Add them to your deployment's environment variables."
+    );
+  }
+  return { pro_monthly: pro, agency_monthly: agency };
+}
 
 export const PLAN_LIMITS = {
   free: {

@@ -168,6 +168,7 @@ export async function POST(request: Request): Promise<Response> {
 
         send(controller, { type: "done", sections });
       } catch (err) {
+        console.error("[generate-outline] failed:", err);
         const message = err instanceof Error ? err.message : "Generation failed";
 
         await supabase

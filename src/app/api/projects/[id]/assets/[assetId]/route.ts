@@ -70,6 +70,7 @@ export async function POST(
 
     return Response.json({ content });
   } catch (err) {
+    console.error("[projects/assets] regeneration failed:", err);
     await (supabase as never as {
       from: (t: string) => { update: (d: object) => { eq: (a: string, b: string) => Promise<unknown> } }
     }).from("project_assets").update({
