@@ -33,7 +33,7 @@ export default async function ExportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Exports</h1>
           <p className="mt-0.5 text-sm text-[hsl(var(--muted-foreground))]">

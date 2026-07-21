@@ -30,8 +30,8 @@ export default async function DashboardLayout({
         <Sidebar user={user} profile={profile} />
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <Topbar user={user} profile={profile} />
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-6xl px-6 py-6">{children}</div>
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</div>
           </main>
         </div>
       </div>

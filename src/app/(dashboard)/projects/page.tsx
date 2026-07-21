@@ -72,7 +72,7 @@ export default async function ProjectsPage() {
       {/* Business Projects */}
       {projects.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">Digital Business Projects</h2>
             <Button asChild variant="outline" size="sm" className="gap-2">
               <Link href="/generate">

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Search, Bell, Plus, Settings, ChevronDown, LogOut, User } from "lucide-react";
+import { Search, Bell, Plus, Settings, ChevronDown, LogOut, User, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/context/sidebar-context";
 import { Breadcrumbs } from "./breadcrumbs";
 import { CommandPalette } from "./command-palette";
 import {
@@ -26,6 +27,7 @@ interface TopbarProps {
 export function Topbar({ user, profile }: TopbarProps) {
   const router = useRouter();
   const [cmdOpen, setCmdOpen] = useState(false);
+  const { openMobile } = useSidebar();
 
   const firstName =
     (profile?.full_name ?? (user?.user_metadata?.full_name as string | undefined))
@@ -49,14 +51,24 @@ export function Topbar({ user, profile }: TopbarProps) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--card)/0.8)] px-4 backdrop-blur-sm">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--card)/0.8)] px-3 backdrop-blur-sm sm:gap-4 sm:px-4">
+        {/* Mobile hamburger */}
+        <button
+          type="button"
+          onClick={openMobile}
+          aria-label="Open menu"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))] lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         {/* Breadcrumbs */}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Breadcrumbs />
         </div>
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Search trigger */}
           <button
             type="button"

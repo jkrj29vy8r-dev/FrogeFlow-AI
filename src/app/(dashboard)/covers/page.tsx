@@ -34,7 +34,7 @@ export default async function CoversPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Cover Designs</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -43,14 +43,14 @@ export default async function CoversPage() {
         </div>
         <Link
           href="/covers/new"
-          className="flex items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 sm:justify-start"
         >
           <Plus className="h-4 w-4" /> New Cover
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-xs text-[hsl(var(--muted-foreground))]">Total Covers</p>
           <p className="mt-1 text-2xl font-bold text-[hsl(var(--foreground))]">{covers.length}</p>

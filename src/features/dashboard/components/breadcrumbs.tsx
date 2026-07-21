@@ -32,21 +32,27 @@ export function Breadcrumbs() {
   });
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm">
+    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
       <Link
         href="/dashboard"
-        className="text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+        className="shrink-0 text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
         aria-label="Dashboard home"
       >
         <Home className="h-3.5 w-3.5" />
       </Link>
       {crumbs.map((crumb) => (
-        <span key={crumb.href} className="flex items-center gap-1">
-          <ChevronRight className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />
+        <span
+          key={crumb.href}
+          className={cn(
+            "flex min-w-0 items-center gap-1",
+            !crumb.isLast && "hidden sm:flex"
+          )}
+        >
+          <ChevronRight className="h-3 w-3 shrink-0 text-[hsl(var(--muted-foreground))]" />
           {crumb.isLast ? (
             <span
               className={cn(
-                "font-medium",
+                "truncate font-medium",
                 crumb.isLast
                   ? "text-[hsl(var(--foreground))]"
                   : "text-[hsl(var(--muted-foreground))]"
@@ -57,7 +63,7 @@ export function Breadcrumbs() {
           ) : (
             <Link
               href={crumb.href}
-              className="text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+              className="truncate text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
             >
               {crumb.label}
             </Link>

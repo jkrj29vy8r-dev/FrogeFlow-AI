@@ -117,7 +117,10 @@ export function CoverEditor({ cover }: Props) {
 
   return (
     <>
-      <div className="-mx-6 -my-6 flex overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
+      <div
+        className="-mx-4 -my-4 flex overflow-x-auto overflow-y-hidden sm:-mx-6 sm:-my-6 lg:-mx-8"
+        style={{ height: 'calc(100vh - 56px)' }}
+      >
         <LeftPanel
           coverInput={coverInput}
           currentContent={content}

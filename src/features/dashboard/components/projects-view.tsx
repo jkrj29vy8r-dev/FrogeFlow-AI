@@ -258,7 +258,7 @@ export function ProjectsView({ documents: initialDocs }: ProjectsViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Projects</h1>
           <p className="mt-0.5 text-sm text-[hsl(var(--muted-foreground))]">
@@ -291,7 +291,7 @@ export function ProjectsView({ documents: initialDocs }: ProjectsViewProps) {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="h-9 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+          className="h-9 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] sm:w-auto"
         >
           {types.map((t) => (
             <option key={t} value={t}>
@@ -304,7 +304,7 @@ export function ProjectsView({ documents: initialDocs }: ProjectsViewProps) {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
-          className="h-9 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+          className="h-9 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] sm:w-auto"
         >
           <option value="updated_at">Last modified</option>
           <option value="created_at">Date created</option>
@@ -312,7 +312,7 @@ export function ProjectsView({ documents: initialDocs }: ProjectsViewProps) {
         </select>
 
         {/* View toggle */}
-        <div className="flex rounded-lg border border-[hsl(var(--border))] p-0.5">
+        <div className="flex shrink-0 self-start rounded-lg border border-[hsl(var(--border))] p-0.5 sm:self-auto">
           <button
             type="button"
             onClick={() => setView("grid")}
