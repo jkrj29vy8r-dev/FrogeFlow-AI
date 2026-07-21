@@ -112,11 +112,20 @@ export function useGeneration(
             if (!line.startsWith("data: ")) continue;
             const raw = line.slice(6).trim();
             if (!raw) continue;
+
+            // Only a JSON.parse failure on a malformed/partial chunk should
+            // be silently ignored. A deliberate throw from onEvent (e.g. the
+            // "error" event handler surfacing a server-side failure) must
+            // propagate — it was previously being swallowed by this same
+            // catch, which meant a clean server-side error left the UI
+            // stuck on the spinner forever with no error and no timeout.
+            let parsedEvent: T;
             try {
-              onEvent(JSON.parse(raw) as T);
+              parsedEvent = JSON.parse(raw) as T;
             } catch {
-              // ignore malformed chunks
+              continue;
             }
+            onEvent(parsedEvent);
           }
         }
       } catch (err) {

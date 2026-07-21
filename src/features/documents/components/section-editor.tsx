@@ -158,24 +158,26 @@ export function SectionEditor({
           const raw = line.slice(6).trim();
           if (!raw) continue;
 
+          let event: SectionStreamEvent;
           try {
-            const event = JSON.parse(raw) as SectionStreamEvent;
-            if (event.type === "token") {
-              newContent += event.text;
-              const html = plainTextToHtml(newContent);
-              editorRef.current?.setContent(html);
-              setContent(html);
-            } else if (event.type === "done") {
-              const finalHtml = plainTextToHtml(newContent);
-              editorRef.current?.setContent(finalHtml);
-              setContent(finalHtml);
-            } else if (event.type === "error") {
-              throw new Error(event.message);
-            }
-          } catch (parseErr) {
-            if ((parseErr as Error).message !== "Unexpected end of JSON input") {
-              throw parseErr;
-            }
+            event = JSON.parse(raw) as SectionStreamEvent;
+          } catch {
+            // Malformed/partial chunk (can legitimately happen if a chunk
+            // boundary splits a message) — skip it, don't treat as fatal.
+            continue;
+          }
+
+          if (event.type === "token") {
+            newContent += event.text;
+            const html = plainTextToHtml(newContent);
+            editorRef.current?.setContent(html);
+            setContent(html);
+          } else if (event.type === "done") {
+            const finalHtml = plainTextToHtml(newContent);
+            editorRef.current?.setContent(finalHtml);
+            setContent(finalHtml);
+          } else if (event.type === "error") {
+            throw new Error(event.message);
           }
         }
       }
