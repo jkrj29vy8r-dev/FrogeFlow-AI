@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { locales, defaultLocale } from "@/i18n/config";
 
@@ -21,38 +20,46 @@ const PROTECTED_PATHS = [
 ];
 const AUTH_PATHS = ["/sign-in", "/sign-up", "/forgot-password"];
 
-// Detect locale from cookie or Accept-Language header (no path prefix rewriting)
+// Supabase sets this cookie when authenticated (project ref = ryxfngutqumfzqfranma)
+const SUPABASE_AUTH_COOKIE = "sb-ryxfngutqumfzqfranma-auth-token";
+
 function detectLocale(request: NextRequest): string {
-  // 1. Check NEXT_LOCALE cookie (set by language switcher)
   const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
   if (cookieLocale && (locales as readonly string[]).includes(cookieLocale)) {
     return cookieLocale;
   }
-
-  // 2. Parse Accept-Language header
   const acceptLang = request.headers.get("accept-language");
   if (acceptLang) {
     const preferred = acceptLang
       .split(",")
-      .map((part) => part.trim().split(";")[0].trim().split("-")[0].toLowerCase());
+      .map((p) => p.trim().split(";")[0].trim().split("-")[0].toLowerCase());
     for (const lang of preferred) {
       if ((locales as readonly string[]).includes(lang)) return lang;
     }
   }
-
   return defaultLocale;
+}
+
+function isAuthenticated(request: NextRequest): boolean {
+  // Check Supabase auth cookie (any of the possible formats)
+  const authCookie = request.cookies.get(SUPABASE_AUTH_COOKIE)?.value;
+  if (authCookie) return true;
+  // Also check legacy/chunked cookie format
+  const chunk0 = request.cookies.get(`${SUPABASE_AUTH_COOKIE}.0`)?.value;
+  if (chunk0) return true;
+  return false;
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // API routes: pass through without any locale handling
   if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
-  // Detect locale and build response with locale header
   const locale = detectLocale(request);
+  const headers = new Headers(request.headers);
+  headers.set("X-NEXT-INTL-LOCALE", locale);
 
   const pathnameWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "/";
 
@@ -63,67 +70,22 @@ export async function proxy(request: NextRequest) {
     (p) => pathnameWithoutLocale === p || pathnameWithoutLocale.startsWith(`${p}/`)
   );
 
-  if (isProtected || isAuthPath) {
-    let response = NextResponse.next({
-      request: {
-        headers: new Headers({ ...Object.fromEntries(request.headers), "X-NEXT-INTL-LOCALE": locale }),
-      },
-    });
+  const authed = isAuthenticated(request);
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            );
-            response = NextResponse.next({
-              request: {
-                headers: new Headers({ ...Object.fromEntries(request.headers), "X-NEXT-INTL-LOCALE": locale }),
-              },
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
-          },
-        },
-      }
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (isProtected && !user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/sign-in";
-      url.searchParams.set("next", pathnameWithoutLocale);
-      return NextResponse.redirect(url);
-    }
-
-    if (isAuthPath && user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
-
-    response.headers.set("X-NEXT-INTL-LOCALE", locale);
-    return response;
+  if (isProtected && !authed) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/sign-in";
+    url.searchParams.set("next", pathnameWithoutLocale);
+    return NextResponse.redirect(url);
   }
 
-  // All other routes: just set locale header, no path rewriting
-  const response = NextResponse.next({
-    request: {
-      headers: new Headers({ ...Object.fromEntries(request.headers), "X-NEXT-INTL-LOCALE": locale }),
-    },
-  });
-  response.headers.set("X-NEXT-INTL-LOCALE", locale);
-  return response;
+  if (isAuthPath && authed) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
