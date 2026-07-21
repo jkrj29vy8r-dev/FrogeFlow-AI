@@ -2,7 +2,12 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getCover } from "@/features/covers/actions/covers.actions";
 import { buildCoverHtml } from "@/features/covers/lib/cover-html";
+import { createClient } from "@/lib/supabase/server";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import type { CoverContent, ExportFormat } from "@/types/covers";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const CANVAS_W = 600;
 const CANVAS_H = 900;
@@ -11,10 +16,28 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = await generationRateLimit(`cover-export:${user.id}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
   const { id } = await params;
   const { searchParams } = req.nextUrl;
-  const format = (searchParams.get("format") ?? "png") as ExportFormat;
-  const scale = Number(searchParams.get("scale") ?? "2");
+  const rawFormat = searchParams.get("format") ?? "png";
+  const format: ExportFormat = (["png", "jpg", "pdf", "svg"] as const).includes(
+    rawFormat as ExportFormat
+  )
+    ? (rawFormat as ExportFormat)
+    : "png";
+  const rawScale = Number(searchParams.get("scale") ?? "2");
+  const scale = Number.isFinite(rawScale) ? Math.min(Math.max(rawScale, 1), 4) : 2;
 
   const { cover } = await getCover(id);
   if (!cover) return NextResponse.json({ error: "Cover not found" }, { status: 404 });

@@ -4,11 +4,17 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe/client";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL("/sign-in", req.url));
+
+  const rl = await rateLimit(`portal:${user.id}`, { limit: 10, windowMs: 60_000 });
+  if (!rl.success) {
+    return NextResponse.redirect(new URL("/billing?error=rate_limited", req.url));
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -21,12 +27,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/billing", req.url));
   }
 
-  const stripe = getStripe();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin;
-  const session = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${appUrl}/billing`,
-  });
+  try {
+    const stripe = getStripe();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin;
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${appUrl}/billing`,
+    });
 
-  return NextResponse.redirect(session.url);
+    return NextResponse.redirect(session.url);
+  } catch (err) {
+    console.error("[billing/portal] failed:", err);
+    return NextResponse.redirect(new URL("/billing?error=portal_failed", req.url));
+  }
 }

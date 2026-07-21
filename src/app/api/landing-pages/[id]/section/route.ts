@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
 import { buildRegenerateSectionPrompt } from "@/features/landing-pages/lib/prompts";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import type { LandingPage, LandingPageSection, LandingPageInput, SectionType } from "@/types/landing-pages";
 import { z } from "zod";
 
@@ -19,6 +21,19 @@ export async function POST(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = await generationRateLimit(`landing-section:${user.id}`);
+  if (!rl.success) {
+    return Response.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 1);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
+  }
 
   const { id: pageId } = await params;
 
@@ -79,6 +94,11 @@ export async function POST(
       .update({ content: newContent as never, updated_at: new Date().toISOString() } as never)
       .eq("id", sectionId)
       .eq("user_id", user.id);
+
+    await deductCredits(supabase, user.id, "landing_section_regenerated", {
+      page_id: pageId,
+      section_id: sectionId,
+    });
 
     return Response.json({ content: newContent });
   } catch (err) {

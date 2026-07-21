@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
 import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -65,6 +66,11 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 1);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -104,6 +110,8 @@ export async function POST(request: Request): Promise<Response> {
             );
           }
         }
+
+        await deductCredits(supabase, user.id, "text_edited", { action });
 
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`)

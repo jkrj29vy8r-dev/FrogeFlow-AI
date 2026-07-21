@@ -43,14 +43,18 @@ export async function saveSectionContent(
 
   const wordCount = countWords(content);
 
-  // Update section
-  const { error: updateError } = await supabase
+  // Update section — select the updated row back so we can tell a genuine
+  // failure apart from "matched zero rows" (e.g. sectionId belongs to
+  // another user), which Supabase does not treat as an error.
+  const { data: updated, error: updateError } = await supabase
     .from("sections" as never)
     .update({ content, word_count: wordCount } as never)
     .eq("id", sectionId)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id")
+    .single();
 
-  if (updateError) return { error: "Failed to save" };
+  if (updateError || !updated) return { error: "Failed to save" };
 
   // Get next version number
   const { count: versionCount } = await supabase

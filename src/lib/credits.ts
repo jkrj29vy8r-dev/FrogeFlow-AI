@@ -7,6 +7,9 @@ export const CREDIT_COSTS = {
   landing_page_generated: 2,
   project_generated: 5,
   pdf_exported: 1,
+  asset_regenerated: 1,
+  landing_section_regenerated: 1,
+  text_edited: 1,
 } as const;
 
 export type CreditEventType = keyof typeof CREDIT_COSTS;

@@ -51,6 +51,13 @@ export async function createCover(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { cover: null, error: "Unauthorized" };
 
+  if (input.projectId) {
+    const { data: project } = await (supabase as never as {
+      from: (t: string) => { select: (s: string) => { eq: (a: string, b: string) => { eq: (a: string, b: string) => { single: () => Promise<{ data: { id: string } | null }> } } } }
+    }).from("projects").select("id").eq("id", input.projectId).eq("user_id", user.id).single();
+    if (!project) return { cover: null, error: "Project not found" };
+  }
+
   const { data, error } = await (supabase as unknown as DB).from("covers").insert({
     user_id: user.id,
     project_id: input.projectId ?? null,

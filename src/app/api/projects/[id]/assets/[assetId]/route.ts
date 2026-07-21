@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
 import { buildRegenerateAssetPrompt } from "@/features/projects/lib/generation-prompts";
+import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import type { AssetType, ProjectInput } from "@/types/projects";
 
 export const runtime = "nodejs";
@@ -17,6 +19,19 @@ export async function POST(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = await generationRateLimit(`asset-regen:${user.id}`);
+  if (!rl.success) {
+    return Response.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
+  const { ok: hasCredits } = await checkCredits(supabase, user.id, 1);
+  if (!hasCredits) {
+    return Response.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 402 });
+  }
 
   const { id: projectId, assetId } = await params;
 
@@ -67,6 +82,11 @@ export async function POST(
       error: null,
       updated_at: new Date().toISOString(),
     }).eq("id", assetId);
+
+    await deductCredits(supabase, user.id, "asset_regenerated", {
+      project_id: projectId,
+      asset_id: assetId,
+    });
 
     return Response.json({ content });
   } catch (err) {

@@ -151,6 +151,15 @@ export async function addSection(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" };
 
+  // Verify the page belongs to this user before writing a section into it
+  const { data: page } = await supabase
+    .from("landing_pages" as never)
+    .select("id")
+    .eq("id", pageId)
+    .eq("user_id", user.id)
+    .single();
+  if (!page) return { error: "Page not found" };
+
   const defaultContent = getDefaultContent(sectionType);
 
   const { data } = await supabase
