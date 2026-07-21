@@ -57,43 +57,75 @@ export function useGeneration(
       onEvent: (event: T) => void
     ): Promise<void> => {
       abortRef.current = new AbortController();
+      const controller = abortRef.current;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: abortRef.current.signal,
-      });
+      // Stall guard: if no data arrives for this long, abort with a clear
+      // error instead of leaving the UI spinning forever (e.g. if the
+      // serverless function is killed by a platform timeout without ever
+      // sending an SSE "error" event).
+      const STALL_TIMEOUT_MS = 90_000;
+      let stallTimer: ReturnType<typeof setTimeout> | null = null;
+      let timedOut = false;
+      const resetStallTimer = () => {
+        if (stallTimer) clearTimeout(stallTimer);
+        stallTimer = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, STALL_TIMEOUT_MS);
+      };
 
-      if (!response.ok) {
-        const err = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? `HTTP ${response.status}`);
-      }
+      try {
+        resetStallTimer();
 
-      if (!response.body) throw new Error("No response body");
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+        resetStallTimer();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        if (!response.ok) {
+          const err = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(err.error ?? `HTTP ${response.status}`);
+        }
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
+        if (!response.body) throw new Error("No response body");
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          try {
-            onEvent(JSON.parse(raw) as T);
-          } catch {
-            // ignore malformed chunks
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          resetStallTimer();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const raw = line.slice(6).trim();
+            if (!raw) continue;
+            try {
+              onEvent(JSON.parse(raw) as T);
+            } catch {
+              // ignore malformed chunks
+            }
           }
         }
+      } catch (err) {
+        if (timedOut) {
+          throw new Error(
+            "Generation timed out waiting for a response. Please try again."
+          );
+        }
+        throw err;
+      } finally {
+        if (stallTimer) clearTimeout(stallTimer);
       }
     },
     []

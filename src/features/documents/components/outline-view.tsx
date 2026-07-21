@@ -97,6 +97,13 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
 
   const initialPhase = (() => {
     const s = document.generation_status;
+    // Self-heal: if sections already exist, always show them — regardless of
+    // a stale "pending"/"generating_outline"/"failed" status left behind by
+    // an interrupted generation (e.g. a serverless function timeout that
+    // never got to update the document's status).
+    if (initialSections.length > 0 && s !== "generating_content" && s !== "completed") {
+      return "outline_ready" as const;
+    }
     if (s === "pending" || s === "generating_outline") return "idle" as const;
     if (s === "outline_ready") return "outline_ready" as const;
     if (s === "generating_content") return "generating_content" as const;
@@ -159,6 +166,15 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
   const displaySections = sections;
   const hasSections = displaySections.length > 0;
   const showOutline = phase === "outline_ready" || phase === "completed";
+
+  const anyStateMatched =
+    phase === "generating_outline" ||
+    (phase === "generating_content" && sectionProgress.length > 0) ||
+    (phase === "failed" && !!error) ||
+    phase === "cancelled" ||
+    (phase === "idle" && !hasSections) ||
+    (showOutline && hasSections) ||
+    phase === "completed";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -316,6 +332,25 @@ export function OutlineView({ document, initialSections }: OutlineViewProps) {
           >
             Open editor
             <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Safety net — should never happen, but never show a blank page */}
+      {!anyStateMatched && (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-[hsl(var(--border))] py-16 text-center">
+          <AlertCircle className="h-8 w-8 text-[hsl(var(--muted-foreground))]" />
+          <div>
+            <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+              Generation seems to have stalled
+            </p>
+            <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+              This can happen if a previous attempt was interrupted. Try generating again.
+            </p>
+          </div>
+          <Button onClick={() => void generateOutline()}>
+            <Sparkles className="h-4 w-4" />
+            Generate outline
           </Button>
         </div>
       )}
