@@ -6,6 +6,7 @@ import type { Section } from "@/types/database";
 import { PRODUCT_TYPE_CONFIGS } from "@/features/documents/types";
 import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { checkCredits, deductCredits } from "@/lib/credits";
+import { markdownToHtml, stripLeadingDuplicateTitle } from "@/lib/markdown";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -147,6 +148,10 @@ export async function POST(request: Request): Promise<Response> {
         }
 
         const wordCount = countWords(fullContent);
+        const contentHtml = stripLeadingDuplicateTitle(
+          markdownToHtml(fullContent),
+          section.title
+        );
 
         // Get current version number
         const { count: versionCount } = await supabase
@@ -161,7 +166,7 @@ export async function POST(request: Request): Promise<Response> {
           section_id: sectionId,
           document_id: documentId,
           user_id: user.id,
-          content: fullContent,
+          content: contentHtml,
           word_count: wordCount,
           version: nextVersion,
         } as never);
@@ -187,7 +192,7 @@ export async function POST(request: Request): Promise<Response> {
         await supabase
           .from("sections" as never)
           .update({
-            content: fullContent,
+            content: contentHtml,
             word_count: wordCount,
             is_generated: true,
             generation_status: "completed",

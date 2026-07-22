@@ -1,5 +1,6 @@
 import type { ExportSettings, FontFamily, PageSize, CoverStyle } from "@/types/exports";
 import type { Section } from "@/types/database";
+import { markdownToHtml, stripLeadingDuplicateTitle } from "@/lib/markdown";
 
 // ── Google Font URLs ──────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ function renderToc(sections: Section[], primaryColor: string): string {
         <span class="toc-number" style="color:${primaryColor};">${i + 1}</span>
         <span class="toc-title">${escHtml(s.title)}</span>
         <span class="toc-dots"></span>
-        <span class="toc-page">—</span>
+        <span class="toc-page-num">—</span>
       </div>
     `
     )
@@ -178,7 +179,11 @@ function renderSection(
     `;
   }
 
-  const sanitizedContent = sanitizeHtmlForPdf(section.content, primaryColor);
+  const contentHtml = stripLeadingDuplicateTitle(
+    markdownToHtml(section.content),
+    section.title
+  );
+  const sanitizedContent = sanitizeHtmlForPdf(contentHtml, primaryColor);
 
   return `
   <div class="section-block">
@@ -326,7 +331,7 @@ function buildStyles(settings: ExportSettings): string {
       border-bottom: 1px dotted #d1d5db;
       margin: 0 2mm;
     }
-    .toc-page { color: #6b7280; font-size: 9pt; }
+    .toc-page-num { color: #6b7280; font-size: 9pt; }
 
     /* ── Chapter header ─────────────────────────────────────────────────── */
     .chapter-header {

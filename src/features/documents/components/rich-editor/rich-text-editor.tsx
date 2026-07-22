@@ -48,21 +48,16 @@ import {
   type SlashCallbacks,
 } from "./slash-commands";
 import { useEditorAi, type AiEditAction } from "../../hooks/use-editor-ai";
+import { markdownToHtml } from "@/lib/markdown";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// AI-generated section content is markdown (**bold**, # headings, lists);
+// content already edited by hand in the rich text editor is HTML already.
+// markdownToHtml tells the two apart the same way this function always has —
+// real HTML starts with a tag — so existing saved documents keep working.
 export function plainTextToHtml(text: string): string {
-  if (!text.trim()) return "";
-  if (text.trimStart().startsWith("<")) return text;
-  return text
-    .split(/\n{2,}/)
-    .map((para) => {
-      const trimmed = para.trim();
-      if (!trimmed) return "";
-      return `<p>${trimmed.replace(/\n/g, "<br>")}</p>`;
-    })
-    .filter(Boolean)
-    .join("");
+  return markdownToHtml(text);
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
