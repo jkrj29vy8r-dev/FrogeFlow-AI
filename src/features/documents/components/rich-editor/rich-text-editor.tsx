@@ -218,6 +218,7 @@ function AiPanel({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Dismiss"
             className="flex items-center justify-center rounded-lg border border-[hsl(var(--border))] px-2 py-1.5 text-xs hover:bg-[hsl(var(--accent))]"
           >
             <X className="h-3 w-3" />

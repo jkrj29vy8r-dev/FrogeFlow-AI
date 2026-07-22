@@ -146,6 +146,7 @@ function ExportRow({
           type="button"
           onClick={() => void handleDelete()}
           disabled={isDeleting}
+          aria-label="Delete export"
           className="flex h-7 w-7 items-center justify-center rounded text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--destructive)/0.1)] hover:text-[hsl(var(--destructive))]"
         >
           {isDeleting ? (

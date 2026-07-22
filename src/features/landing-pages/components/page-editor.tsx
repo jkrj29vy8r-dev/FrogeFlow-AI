@@ -403,6 +403,8 @@ function SortableSection({
           <button
             type="button"
             onClick={() => onToggleCollapse(section.id)}
+            aria-label={isCollapsed ? "Expand section" : "Collapse section"}
+            aria-expanded={!isCollapsed}
             className="flex h-7 w-7 items-center justify-center rounded text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]"
           >
             {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}

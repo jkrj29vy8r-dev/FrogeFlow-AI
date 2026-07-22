@@ -57,7 +57,7 @@ export function SectionEditDialog({ section, onSave, onClose }: SectionEditDialo
           <h2 className="font-semibold text-[hsl(var(--foreground))]">
             Edit: {SECTION_LABELS[section.section_type as SectionType]}
           </h2>
-          <button type="button" onClick={onClose} className="rounded-md p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
             <X className="h-4 w-4" />
           </button>
         </div>

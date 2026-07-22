@@ -60,7 +60,7 @@ export function ExportDialog({ coverId, coverName, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-2xl">
-        <button onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1.5 hover:bg-[hsl(var(--accent))]">
+        <button type="button" onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-lg p-1.5 hover:bg-[hsl(var(--accent))]">
           <X className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
         </button>
 

@@ -67,7 +67,11 @@ export function AssetCard({ asset, onRegenerate }: Props) {
               {asset.status}
             </span>
             <button
+              type="button"
               onClick={() => setMenuOpen(m => !m)}
+              aria-label="More options"
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
               className="flex h-7 w-7 items-center justify-center rounded hover:bg-[hsl(var(--accent))]"
             >
               <MoreHorizontal className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />

@@ -86,7 +86,7 @@ export function ExportDialog({ page, sections, onClose }: ExportDialogProps) {
             <h2 className="font-semibold text-[hsl(var(--foreground))]">Export Page</h2>
             <p className="mt-0.5 text-xs text-[hsl(var(--muted-foreground))]">Download your landing page in your preferred format</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-md p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
             <X className="h-4 w-4" />
           </button>
         </div>

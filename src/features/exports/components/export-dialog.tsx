@@ -131,6 +131,7 @@ export function ExportDialog({ documentId, documentTitle, onClose }: ExportDialo
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
           >
             <X className="h-4 w-4" />
