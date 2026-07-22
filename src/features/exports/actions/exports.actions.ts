@@ -27,9 +27,12 @@ export async function createExportRecord(
       download_count: 0,
     } as never)
     .select("id")
-    .single() as { data: { id: string } | null; error: unknown };
+    .single() as { data: { id: string } | null; error: { message?: string; code?: string } | null };
 
-  if (error || !data) return { error: "Failed to create export record" };
+  if (error || !data) {
+    console.error("[createExportRecord] insert failed:", error);
+    return { error: "Failed to create export record" };
+  }
   return { exportId: data.id };
 }
 
