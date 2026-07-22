@@ -31,7 +31,7 @@ export function CtaSection() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
-          <Button size="xl" variant="outline" asChild className="border-white/30 text-white hover:bg-white/10">
+          <Button size="xl" variant="outline" asChild className="border-white/30 bg-transparent text-white hover:bg-white/10">
             <Link href="#pricing">View pricing</Link>
           </Button>
         </div>

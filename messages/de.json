@@ -151,7 +151,7 @@
       "passwordPlaceholder": "Min. 8 characters",
       "submit": "Create account",
       "submitting": "Creating account…",
-      "terms": "By creating an account you agree to our {terms} and {privacy}.",
+      "terms": "By creating an account you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
       "termsLink": "Terms",
       "privacyLink": "Privacy Policy",
       "hasAccount": "Already have an account?",
