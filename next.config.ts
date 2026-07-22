@@ -4,6 +4,14 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // Keep these out of the webpack/esbuild bundle — they ship native/JSON
+  // assets (e.g. playwright-core's browsers.json) that bundling mangles,
+  // which crashed PDF export on Vercel with "Cannot find module
+  // .../playwright-core/browsers.json". Marking them external makes Next.js
+  // require() them at runtime straight from node_modules and trace their
+  // files for inclusion in the serverless output instead.
+  serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
+
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],
