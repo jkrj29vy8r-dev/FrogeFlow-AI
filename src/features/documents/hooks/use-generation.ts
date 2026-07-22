@@ -210,6 +210,8 @@ export function useGeneration(
 
       const action = async () => {
         try {
+          let failedCount = 0;
+
           for (let i = 0; i < sectionsToGenerate.length; i++) {
             const section = sectionsToGenerate[i];
             setCurrentSectionIndex(i);
@@ -249,12 +251,27 @@ export function useGeneration(
               if ((sectionErr as Error).name === "AbortError") throw sectionErr;
 
               // Mark section as failed but continue with others
+              failedCount++;
               setSectionProgress((prev) =>
                 prev.map((p, idx) =>
                   idx === i ? { ...p, status: "failed" } : p
                 )
               );
             }
+          }
+
+          if (failedCount > 0) {
+            // Don't silently report success and jump to the editor when some
+            // (or all) sections actually failed to generate — that left users
+            // staring at a "completed" eBook full of blank chapters with no
+            // indication anything went wrong. Surface it as a real failure
+            // instead; the sections that did succeed are already saved.
+            setError(
+              `${failedCount} of ${sectionsToGenerate.length} section${failedCount > 1 ? "s" : ""} failed to generate. You can retry them individually from the editor, or try generating again.`
+            );
+            setPhase("failed");
+            void updateDocumentStatus(documentId, "failed");
+            return;
           }
 
           await updateDocumentStatus(documentId, "completed");
