@@ -47,7 +47,19 @@ export function exportAsHtml({ page, sections }: ExportInput): string {
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root { --primary: ${primary}; --secondary: ${secondary}; }
-    body { font-family: system-ui, -apple-system, sans-serif; color: #111827; background: #fff; line-height: 1.6; }
+    html { overflow-x: hidden; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #111827;
+      background: #fff;
+      line-height: 1.6;
+      /* AI-generated headlines/descriptions can contain long unbroken
+         words or URLs with no natural wrap point — without this, a single
+         long token overflows its container and causes horizontal scroll
+         on the exported page. Inherited by every heading/paragraph below. */
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
     .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     section { padding: 80px 0; }
     h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }

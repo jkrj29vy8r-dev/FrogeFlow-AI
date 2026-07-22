@@ -415,7 +415,7 @@ function SortableSection({
       {/* Section preview */}
       {!isCollapsed && (
         <div
-          className="overflow-hidden rounded-b-xl border-t border-[hsl(var(--border))] text-sm"
+          className="overflow-hidden rounded-b-xl border-t border-[hsl(var(--border))] text-sm break-words"
           style={{ fontSize: '0.7rem' }}
         >
           {isRegenerating ? (

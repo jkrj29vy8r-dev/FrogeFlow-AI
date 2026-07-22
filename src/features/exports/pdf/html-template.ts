@@ -252,6 +252,11 @@ function buildStyles(settings: ExportSettings): string {
       background: white;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      /* Safety net for every heading/title below (cover, chapter, TOC,
+         subchapter) — a long unbroken title or URL from AI-generated
+         content must wrap, never silently run off the printed page. */
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
 
     /* ── Cover page ─────────────────────────────────────────────────────── */
@@ -325,7 +330,14 @@ function buildStyles(settings: ExportSettings): string {
       font-size: 9pt;
       min-width: 6mm;
     }
-    .toc-title { font-weight: 500; }
+    .toc-title {
+      font-weight: 500;
+      /* Flex children don't shrink below their content's natural width by
+         default, so a long unbroken chapter title would push toc-dots/the
+         page number off the page regardless of the word-break rule on
+         body. min-width: 0 lets it actually wrap within the row. */
+      min-width: 0;
+    }
     .toc-dots {
       flex: 1;
       border-bottom: 1px dotted #d1d5db;
@@ -393,7 +405,14 @@ function buildStyles(settings: ExportSettings): string {
 
     /* ── Section content ────────────────────────────────────────────────── */
     .section-block { margin-bottom: 8mm; }
-    .section-content { font-size: ${baseFontSize}; }
+    .section-content {
+      font-size: ${baseFontSize};
+      /* AI-generated content can contain long unbroken words or URLs with no
+         wrap points — without this, a single long token silently overflows
+         the page in a printed PDF (there's no scrollbar to fall back on). */
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
 
     .section-content p { margin-bottom: 3mm; }
     .section-content p:last-child { margin-bottom: 0; }
@@ -457,7 +476,12 @@ function buildStyles(settings: ExportSettings): string {
       padding: 4mm 5mm;
       border-radius: 2mm;
       margin: 3mm 0;
+      /* A printed page has no scrollbar — overflow: hidden used to silently
+         cut off any code line wider than the page. Wrap instead so nothing
+         is lost. */
       overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-all;
       font-family: 'Courier New', Courier, monospace;
       font-size: 8.5pt;
       line-height: 1.5;
@@ -468,10 +492,11 @@ function buildStyles(settings: ExportSettings): string {
       padding: 0;
     }
 
-    .section-content a { color: ${primaryColor}; }
+    .section-content a { color: ${primaryColor}; overflow-wrap: break-word; }
 
     .section-content table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       margin: 3mm 0;
       font-size: 9.5pt;
@@ -482,10 +507,13 @@ function buildStyles(settings: ExportSettings): string {
       padding: 2mm 3mm;
       text-align: left;
       font-weight: 600;
+      overflow-wrap: break-word;
     }
     .section-content td {
       padding: 2mm 3mm;
       border-bottom: 0.3mm solid #e5e7eb;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .section-content tr:nth-child(even) td { background: #f9fafb; }
 
