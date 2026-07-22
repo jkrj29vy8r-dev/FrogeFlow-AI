@@ -383,7 +383,10 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
           variant="outline"
           size="sm"
           className="w-full gap-2"
-          onClick={() => setShowExport(true)}
+          onClick={() => {
+            setMobileTocOpen(false);
+            setShowExport(true);
+          }}
         >
           <Download className="h-3.5 w-3.5" />
           Export PDF
