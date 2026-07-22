@@ -5,7 +5,13 @@
  * - Override with PLAYWRIGHT_CHROMIUM_PATH env var
  */
 export async function launchBrowser() {
-  const { chromium } = await import("playwright");
+  // Use playwright-core (not the full "playwright" package) — every branch
+  // below always supplies an explicit executablePath, so the full package's
+  // bundled browser-download machinery is never needed. Importing it anyway
+  // breaks the Vercel serverless bundle: "playwright"'s browsers.json isn't
+  // included in the deployment output, causing a hard "Cannot find module
+  // .../playwright-core/browsers.json" crash at import time.
+  const { chromium } = await import("playwright-core");
 
   const customPath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 
