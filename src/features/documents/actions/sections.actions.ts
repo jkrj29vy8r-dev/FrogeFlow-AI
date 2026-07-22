@@ -114,10 +114,18 @@ export async function updateDocumentStatus(
   return {};
 }
 
-// ── Deduct credits for content generation ─────────────────────────────────────
-
+// ── Check credits before starting bulk content generation ─────────────────────
+//
+// This used to also deduct 1 flat credit here on top of the per-section
+// credit charged by /api/ai/generate-section for every section it writes —
+// double-billing a single content-generation run (e.g. a 5-section eBook
+// actually cost 1 outline + 1 flat + 5 per-section = 7 credits, more than
+// the entire Free plan's starting balance). Each section's own request
+// already checks and deducts its own credit, so this is now a read-only
+// upfront check so the UI can fail fast with a clear message instead of
+// silently failing section-by-section once credits run out mid-run.
 export async function deductGenerationCredit(
-  documentId: string
+  _documentId: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -125,26 +133,13 @@ export async function deductGenerationCredit(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("credits")
+    .select("credits, plan")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.credits < 1) return { error: "Insufficient credits" };
-
-  const { error: deductError } = await supabase
-    .from("profiles")
-    .update({ credits: profile.credits - 1 })
-    .eq("id", user.id);
-
-  if (deductError) return { error: "Failed to deduct credit" };
-
-  await supabase.from("usage_events").insert({
-    user_id: user.id,
-    document_id: documentId,
-    event_type: "section_generated",
-    credits_used: 1,
-    metadata: { action: "full_content_generation" },
-  });
+  if (!profile) return { error: "Unauthorized" };
+  if (profile.plan === "pro" || profile.plan === "agency") return {};
+  if ((profile.credits as number) < 1) return { error: "Insufficient credits" };
 
   return {};
 }
