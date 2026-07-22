@@ -222,6 +222,19 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
     return () => window.document.removeEventListener("fullscreenchange", handler);
   }, []);
 
+  // Lock background scroll while the mobile TOC drawer is open — otherwise
+  // the main content can be scrolled underneath it, so buttons from the
+  // page (e.g. the bottom "Export PDF") can end up poking out past the
+  // drawer's edge, looking like a rendering glitch.
+  useEffect(() => {
+    if (!mobileTocOpen) return;
+    const original = window.document.body.style.overflow;
+    window.document.body.style.overflow = "hidden";
+    return () => {
+      window.document.body.style.overflow = original;
+    };
+  }, [mobileTocOpen]);
+
   const toggleFullscreen = useCallback(async () => {
     if (!window.document.fullscreenElement) {
       await containerRef.current?.requestFullscreen().catch(() => null);
@@ -425,7 +438,7 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
       {mobileTocOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/80 lg:hidden"
             onClick={() => setMobileTocOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--background))] lg:hidden">
