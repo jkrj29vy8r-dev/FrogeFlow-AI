@@ -12,6 +12,20 @@ const nextConfig: NextConfig = {
   // files for inclusion in the serverless output instead.
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
 
+  // serverExternalPackages alone isn't enough — Next's automatic file
+  // tracer (@vercel/nft) still misses playwright-core's data files (like
+  // browsers.json) that aren't reached through a static require()/import,
+  // so they never make it into the deployed serverless bundle. Force them
+  // in explicitly for every route (PDF export is used from several route
+  // handlers), matching Next's own documented pattern for native/runtime
+  // assets like this.
+  outputFileTracingIncludes: {
+    "/*": [
+      "./node_modules/playwright-core/**/*",
+      "./node_modules/@sparticuz/chromium/**/*",
+    ],
+  },
+
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],
