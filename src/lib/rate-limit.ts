@@ -66,6 +66,15 @@ export const authRateLimit = (identifier: string) =>
 export const generationRateLimit = (identifier: string) =>
   rateLimit(identifier, { limit: 5, windowMs: 60_000 });
 
+// Section generation fires one request per section, back-to-back, for a whole
+// document at once — an 8–12 section eBook is a burst of 8–12 requests in a
+// couple of minutes. The old 5/min limit meant a fast eBook tripped its own
+// limit partway through and a section came back 429 ("1 of 8 failed"). Credits
+// (deducted per section) are the real abuse guard, so this limit only needs to
+// stay high enough to never punish a legitimate single-document generation.
+export const sectionGenerationRateLimit = (identifier: string) =>
+  rateLimit(identifier, { limit: 40, windowMs: 60_000 });
+
 export function rateLimitHeaders(result: RateLimitResult): Record<string, string> {
   return {
     "X-RateLimit-Limit": String(result.limit),

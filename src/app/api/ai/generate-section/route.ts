@@ -4,7 +4,7 @@ import { buildSectionPrompt } from "@/lib/ai/prompts";
 import type { DocumentMetadata, OutlineSection } from "@/features/documents/types";
 import type { Section } from "@/types/database";
 import { PRODUCT_TYPE_CONFIGS } from "@/features/documents/types";
-import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { sectionGenerationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { checkCredits, deductCredits } from "@/lib/credits";
 import { markdownToHtml, stripLeadingDuplicateTitle } from "@/lib/markdown";
 import { z } from "zod";
@@ -63,7 +63,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Document not found" }, { status: 404 });
   }
 
-  const rl = await generationRateLimit(`section:${user.id}`);
+  const rl = await sectionGenerationRateLimit(`section:${user.id}`);
   if (!rl.success) {
     return Response.json({ error: "Too many requests. Please wait a moment." }, {
       status: 429,

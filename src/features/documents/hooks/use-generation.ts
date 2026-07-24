@@ -51,6 +51,9 @@ export function useGeneration(
 
   const abortRef = useRef<AbortController | null>(null);
   const lastActionRef = useRef<(() => Promise<void>) | null>(null);
+  // Tracks a user cancellation so the retry backoff below can bail out
+  // immediately instead of waiting out its timer and firing another attempt.
+  const cancelledRef = useRef(false);
 
   const readStream = useCallback(
     async <T>(
@@ -147,6 +150,7 @@ export function useGeneration(
     setOutlineText("");
     setError(null);
     setIsCancelling(false);
+    cancelledRef.current = false;
 
     const action = async () => {
       try {
@@ -197,6 +201,7 @@ export function useGeneration(
       setPhase("generating_content");
       setError(null);
       setIsCancelling(false);
+      cancelledRef.current = false;
       await updateDocumentStatus(documentId, "generating_content");
 
       // Initialize progress
@@ -212,45 +217,90 @@ export function useGeneration(
         try {
           let failedCount = 0;
 
+          // Retry each section a couple of times before giving up. Section
+          // generation calls the Anthropic API, which occasionally returns a
+          // transient error (overloaded/529, timeout, a dropped stream) — that
+          // was the whole cause of the odd "1 of 8 sections failed" runs, where
+          // 7 sections wrote fine and a single unlucky one hit a momentary API
+          // blip. A short backoff + retry lets those self-heal instead of
+          // dumping the user on a failure screen.
+          const MAX_ATTEMPTS = 3;
+
           for (let i = 0; i < sectionsToGenerate.length; i++) {
             const section = sectionsToGenerate[i];
             setCurrentSectionIndex(i);
 
-            setSectionProgress((prev) =>
-              prev.map((p, idx) =>
-                idx === i ? { ...p, status: "generating", content: "" } : p
-              )
-            );
+            let succeeded = false;
 
-            let sectionContent = "";
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+              setSectionProgress((prev) =>
+                prev.map((p, idx) =>
+                  idx === i ? { ...p, status: "generating", content: "" } : p
+                )
+              );
 
-            try {
-              await readStream<SectionStreamEvent>(
-                "/api/ai/generate-section",
-                { sectionId: section.id, documentId },
-                (event) => {
-                  if (event.type === "token") {
-                    sectionContent += event.text;
-                    setSectionProgress((prev) =>
-                      prev.map((p, idx) =>
-                        idx === i ? { ...p, content: sectionContent } : p
-                      )
-                    );
-                  } else if (event.type === "done") {
-                    setSectionProgress((prev) =>
-                      prev.map((p, idx) =>
-                        idx === i ? { ...p, status: "completed", content: sectionContent } : p
-                      )
-                    );
-                  } else if (event.type === "error") {
-                    throw new Error(event.message);
+              let sectionContent = "";
+
+              try {
+                await readStream<SectionStreamEvent>(
+                  "/api/ai/generate-section",
+                  { sectionId: section.id, documentId },
+                  (event) => {
+                    if (event.type === "token") {
+                      sectionContent += event.text;
+                      setSectionProgress((prev) =>
+                        prev.map((p, idx) =>
+                          idx === i ? { ...p, content: sectionContent } : p
+                        )
+                      );
+                    } else if (event.type === "done") {
+                      setSectionProgress((prev) =>
+                        prev.map((p, idx) =>
+                          idx === i ? { ...p, status: "completed", content: sectionContent } : p
+                        )
+                      );
+                    } else if (event.type === "error") {
+                      throw new Error(event.message);
+                    }
+                  }
+                );
+                succeeded = true;
+                break;
+              } catch (sectionErr) {
+                // A user cancel must stop everything immediately — never retry.
+                if ((sectionErr as Error).name === "AbortError" || cancelledRef.current) {
+                  throw sectionErr;
+                }
+
+                // Some failures are deterministic — running out of credits or
+                // losing the session won't fix itself on a retry, and every
+                // section after this one would fail the same way, so stop the
+                // whole run and surface the real reason instead of grinding
+                // through pointless retries.
+                const msg = (sectionErr as Error).message ?? "";
+                if (/insufficient credits|unauthorized|upgrade your plan/i.test(msg)) {
+                  throw sectionErr;
+                }
+
+                // Transient failure: wait a beat and retry (unless out of
+                // attempts). Backoff grows per attempt but stays interruptible
+                // so a cancel mid-wait doesn't kick off another request.
+                if (attempt < MAX_ATTEMPTS) {
+                  const backoffMs = attempt * 1500;
+                  const step = 150;
+                  for (let waited = 0; waited < backoffMs; waited += step) {
+                    if (cancelledRef.current) break;
+                    await new Promise((r) => setTimeout(r, step));
+                  }
+                  if (cancelledRef.current) {
+                    throw sectionErr;
                   }
                 }
-              );
-            } catch (sectionErr) {
-              if ((sectionErr as Error).name === "AbortError") throw sectionErr;
+              }
+            }
 
-              // Mark section as failed but continue with others
+            if (!succeeded) {
+              // Mark section as failed but continue with the others.
               failedCount++;
               setSectionProgress((prev) =>
                 prev.map((p, idx) =>
@@ -302,12 +352,14 @@ export function useGeneration(
     // actual phase flips to "cancelled" as soon as the abort propagates
     // through the fetch/reader, which doesn't depend on any server round-trip.
     setIsCancelling(true);
+    cancelledRef.current = true;
     abortRef.current?.abort();
   }, []);
 
   const retry = useCallback(() => {
     setError(null);
     setIsCancelling(false);
+    cancelledRef.current = false;
     if (lastActionRef.current) {
       void lastActionRef.current();
     }
