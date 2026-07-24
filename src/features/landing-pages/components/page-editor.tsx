@@ -31,9 +31,11 @@ import {
   ChevronDown,
   ChevronUp,
   Globe,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "@/i18n/navigation";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import type { LandingPage, LandingPageSection, SectionType } from "@/types/landing-pages";
 import { SECTION_LABELS } from "@/types/landing-pages";
@@ -78,6 +80,16 @@ export function PageEditor({ page, initialSections }: PageEditorProps) {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const primary = page.settings.primaryColor || '#6366f1';
+
+  // Prefill a new eBook's title/description/audience from this landing
+  // page's own input, so the two aren't fully disconnected — the user
+  // still reviews and generates the eBook themselves.
+  const ebookHref = `/new?${new URLSearchParams({
+    type: "ebook",
+    title: page.input?.productName ?? page.name,
+    description: page.input?.description ?? "",
+    audience: page.input?.targetAudience ?? "",
+  }).toString()}`;
   const secondary = page.settings.secondaryColor || '#8b5cf6';
 
   // Filter visible sections for search
@@ -185,6 +197,11 @@ export function PageEditor({ page, initialSections }: PageEditorProps) {
           <span className="rounded-full bg-[hsl(var(--muted))] px-2.5 py-0.5 text-xs font-medium text-[hsl(var(--muted-foreground))]">
             {page.status === 'published' ? '🟢 Published' : '⚪ Draft'}
           </span>
+          <Button variant="outline" size="sm" className="gap-1.5" asChild>
+            <Link href={ebookHref}>
+              <BookOpen className="h-3.5 w-3.5" /> Create eBook
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowExport(true)}>
             <Download className="h-3.5 w-3.5" /> Export
           </Button>

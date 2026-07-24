@@ -87,7 +87,11 @@ const PROGRESS_MESSAGES = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function GeneratorWizard() {
+export function GeneratorWizard({
+  initialData,
+}: {
+  initialData?: Partial<Pick<WizardData, "productName" | "description" | "targetAudience">>;
+} = {}) {
   const router = useRouter();
   const [step, setStep] = useState<WizardStep>('type');
   const [progressPct, setProgressPct] = useState(0);
@@ -109,6 +113,7 @@ export function GeneratorWizard() {
     cta: 'Get Started Free',
     testimonials: '',
     faqs: '',
+    ...initialData,
   });
 
   function update<K extends keyof WizardData>(key: K, value: WizardData[K]) {

@@ -120,14 +120,26 @@ const initialState: CreateDocumentState = {};
 
 const STEPS = ["Product type", "Details", "Review & generate"];
 
-export function CreateDocumentWizard({ initialType }: { initialType?: DocumentType }) {
+interface CreateDocumentWizardProps {
+  initialType?: DocumentType;
+  initialTitle?: string;
+  initialDescription?: string;
+  initialAudience?: string;
+}
+
+export function CreateDocumentWizard({
+  initialType,
+  initialTitle = "",
+  initialDescription = "",
+  initialAudience = "",
+}: CreateDocumentWizardProps) {
   const [step, setStep] = useState(initialType ? 2 : 1);
   const [selectedType, setSelectedType] = useState<DocumentType | null>(initialType ?? null);
 
   // Step 2 fields
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [audience, setAudience] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [audience, setAudience] = useState(initialAudience);
   const [language, setLanguage] = useState("English");
   const [writingStyle, setWritingStyle] = useState("instructional");
   const [tone, setTone] = useState("professional");

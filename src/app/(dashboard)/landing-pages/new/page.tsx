@@ -7,10 +7,20 @@ export const metadata: Metadata = {
   title: "New Landing Page",
 };
 
-export default async function NewLandingPagePage() {
+interface NewLandingPagePageProps {
+  searchParams: Promise<{
+    productName?: string;
+    description?: string;
+    targetAudience?: string;
+  }>;
+}
+
+export default async function NewLandingPagePage({ searchParams }: NewLandingPagePageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
+
+  const { productName, description, targetAudience } = await searchParams;
 
   return (
     <div className="space-y-6">
@@ -20,7 +30,7 @@ export default async function NewLandingPagePage() {
           Answer a few questions and AI will generate a conversion-optimized page in seconds.
         </p>
       </div>
-      <GeneratorWizard />
+      <GeneratorWizard initialData={{ productName, description, targetAudience }} />
     </div>
   );
 }

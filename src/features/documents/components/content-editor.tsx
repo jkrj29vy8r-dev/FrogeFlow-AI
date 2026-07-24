@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Menu,
   X,
+  Monitor,
 } from "lucide-react";
 import {
   DndContext,
@@ -41,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { SectionEditor } from "./section-editor";
 import { ExportDialog } from "@/features/exports/components/export-dialog";
 import type { Section, DocumentWithGeneration } from "@/types/database";
+import type { DocumentMetadata } from "@/features/documents/types";
 import {
   updateDocumentStatus,
   reorderSections,
@@ -319,6 +321,16 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
     const stripped = s.content.replace(/<[^>]+>/g, " ").trim();
     return sum + stripped.split(/\s+/).filter(Boolean).length;
   }, 0);
+
+  // Prefill a new Landing Page's product/description/audience fields from this
+  // eBook's own metadata, so the two aren't fully disconnected — the user
+  // still reviews and generates the landing page themselves.
+  const metadata = document.content as unknown as DocumentMetadata;
+  const landingPageHref = `/landing-pages/new?${new URLSearchParams({
+    productName: metadata?.title ?? document.title,
+    description: metadata?.description ?? "",
+    targetAudience: metadata?.audience ?? "",
+  }).toString()}`;
 
   // ── Sidebar content (shared between desktop sidebar and mobile drawer) ─────────
   const tocContent = (
@@ -639,7 +651,13 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
                     {totalWords.toLocaleString()} words total
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" className="gap-2" asChild>
+                      <Link href={landingPageHref}>
+                        <Monitor className="h-4 w-4" />
+                        Create landing page
+                      </Link>
+                    </Button>
                     <Button
                       variant="outline"
                       className="gap-2"

@@ -21,18 +21,28 @@ const VALID_TYPES: DocumentType[] = [
 ];
 
 interface NewPageProps {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{
+    type?: string;
+    title?: string;
+    description?: string;
+    audience?: string;
+  }>;
 }
 
 export default async function NewPage({ searchParams }: NewPageProps) {
-  const { type } = await searchParams;
+  const { type, title, description, audience } = await searchParams;
   const initialType = VALID_TYPES.includes(type as DocumentType)
     ? (type as DocumentType)
     : undefined;
 
   return (
     <div className="px-4 py-8 sm:px-6">
-      <CreateDocumentWizard initialType={initialType} />
+      <CreateDocumentWizard
+        initialType={initialType}
+        initialTitle={title}
+        initialDescription={description}
+        initialAudience={audience}
+      />
     </div>
   );
 }
