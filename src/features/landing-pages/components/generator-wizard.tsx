@@ -90,7 +90,9 @@ const PROGRESS_MESSAGES = [
 export function GeneratorWizard({
   initialData,
 }: {
-  initialData?: Partial<Pick<WizardData, "productName" | "description" | "targetAudience">>;
+  initialData?: Partial<
+    Pick<WizardData, "productName" | "description" | "targetAudience" | "pageType" | "cta">
+  >;
 } = {}) {
   const router = useRouter();
   const [step, setStep] = useState<WizardStep>('type');
@@ -113,7 +115,12 @@ export function GeneratorWizard({
     cta: 'Get Started Free',
     testimonials: '',
     faqs: '',
-    ...initialData,
+    // Only override defaults with the initial fields that are actually set —
+    // spreading raw initialData would let an undefined query param blank out a
+    // default (e.g. a missing cta wiping "Get Started Free").
+    ...Object.fromEntries(
+      Object.entries(initialData ?? {}).filter(([, v]) => v !== undefined && v !== "")
+    ),
   });
 
   function update<K extends keyof WizardData>(key: K, value: WizardData[K]) {

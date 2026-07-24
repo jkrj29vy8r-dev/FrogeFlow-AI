@@ -322,14 +322,27 @@ export function ContentEditor({ document, initialSections }: ContentEditorProps)
     return sum + stripped.split(/\s+/).filter(Boolean).length;
   }, 0);
 
-  // Prefill a new Landing Page's product/description/audience fields from this
-  // eBook's own metadata, so the two aren't fully disconnected — the user
-  // still reviews and generates the landing page themselves.
+  // Prefill a new Landing Page so it actually presents THIS eBook — a sales
+  // page for the book. We hand the generator the book's own pitch plus its
+  // table of contents (the section titles), so the AI writes hero + benefits
+  // from the real chapters and a "get the eBook" CTA, instead of a generic page.
   const metadata = document.content as unknown as DocumentMetadata;
+  const chapterList = sections
+    .filter((s) => s.section_type !== "subchapter")
+    .map((s) => `- ${s.title}`)
+    .join("\n");
+  const landingDescription = [
+    metadata?.description ?? "",
+    chapterList ? `\n\nWhat's inside the eBook "${metadata?.title ?? document.title}":\n${chapterList}` : "",
+  ]
+    .join("")
+    .trim();
   const landingPageHref = `/landing-pages/new?${new URLSearchParams({
+    pageType: "sales",
     productName: metadata?.title ?? document.title,
-    description: metadata?.description ?? "",
+    description: landingDescription,
     targetAudience: metadata?.audience ?? "",
+    cta: "Get the eBook",
   }).toString()}`;
 
   // ── Sidebar content (shared between desktop sidebar and mobile drawer) ─────────
