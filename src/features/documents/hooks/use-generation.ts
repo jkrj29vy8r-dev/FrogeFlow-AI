@@ -225,12 +225,17 @@ export function useGeneration(
           // blip. A short backoff + retry lets those self-heal instead of
           // dumping the user on a failure screen.
           const MAX_ATTEMPTS = 3;
+          // Remember the actual reason a section gave up, so the failure
+          // screen can show *why* ("...failed: Anthropic API is overloaded")
+          // instead of a bare count the user can't act on.
+          let lastSectionError = "";
 
           for (let i = 0; i < sectionsToGenerate.length; i++) {
             const section = sectionsToGenerate[i];
             setCurrentSectionIndex(i);
 
             let succeeded = false;
+            let sectionError = "";
 
             for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
               setSectionProgress((prev) =>
@@ -272,15 +277,22 @@ export function useGeneration(
                   throw sectionErr;
                 }
 
-                // Some failures are deterministic — running out of credits or
-                // losing the session won't fix itself on a retry, and every
-                // section after this one would fail the same way, so stop the
-                // whole run and surface the real reason instead of grinding
-                // through pointless retries.
+                // Some failures are deterministic — the app's own credits are
+                // spent, the session is gone, or the Anthropic account balance
+                // is empty. None of those fix themselves on a retry, and every
+                // remaining section would fail the same way, so stop the whole
+                // run now and surface the real reason instead of grinding
+                // through ~3 pointless retries per section.
                 const msg = (sectionErr as Error).message ?? "";
-                if (/insufficient credits|unauthorized|upgrade your plan/i.test(msg)) {
+                if (
+                  /insufficient credits|unauthorized|upgrade your plan|credit balance|balance is too low|billing/i.test(
+                    msg
+                  )
+                ) {
                   throw sectionErr;
                 }
+
+                sectionError = msg || sectionError;
 
                 // Transient failure: wait a beat and retry (unless out of
                 // attempts). Backoff grows per attempt but stays interruptible
@@ -302,6 +314,7 @@ export function useGeneration(
             if (!succeeded) {
               // Mark section as failed but continue with the others.
               failedCount++;
+              if (sectionError) lastSectionError = sectionError;
               setSectionProgress((prev) =>
                 prev.map((p, idx) =>
                   idx === i ? { ...p, status: "failed" } : p
@@ -316,8 +329,9 @@ export function useGeneration(
             // staring at a "completed" eBook full of blank chapters with no
             // indication anything went wrong. Surface it as a real failure
             // instead; the sections that did succeed are already saved.
+            const reason = lastSectionError ? ` Reason: ${lastSectionError}` : "";
             setError(
-              `${failedCount} of ${sectionsToGenerate.length} section${failedCount > 1 ? "s" : ""} failed to generate. You can retry them individually from the editor, or try generating again.`
+              `${failedCount} of ${sectionsToGenerate.length} section${failedCount > 1 ? "s" : ""} failed to generate.${reason} You can retry them individually from the editor, or try generating again.`
             );
             setPhase("failed");
             void updateDocumentStatus(documentId, "failed");
