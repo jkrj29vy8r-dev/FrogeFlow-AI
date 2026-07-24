@@ -148,11 +148,12 @@ export async function POST(request: Request): Promise<Response> {
           })
         );
 
-        const { error: insertError } = await supabase
+        const { data: insertedSections, error: insertError } = await supabase
           .from("sections" as never)
-          .insert(sectionRows as never);
+          .insert(sectionRows as never)
+          .select("*") as { data: Section[] | null; error: unknown };
 
-        if (insertError) throw new Error("Failed to save outline");
+        if (insertError || !insertedSections) throw new Error("Failed to save outline");
 
         // Update document status
         await supabase
@@ -166,7 +167,12 @@ export async function POST(request: Request): Promise<Response> {
           section_count: sections.length,
         });
 
-        send(controller, { type: "done", sections });
+        // Send back the real inserted rows (with DB-generated ids), not the
+        // pre-insert `sections` array — that one has no id field at all,
+        // which made every subsequent "generate content" request send
+        // sectionId: undefined and fail validation for every single section.
+        const orderedSections = [...insertedSections].sort((a, b) => a.position - b.position);
+        send(controller, { type: "done", sections: orderedSections });
       } catch (err) {
         console.error("[generate-outline] failed:", err);
         const message = err instanceof Error ? err.message : "Generation failed";
