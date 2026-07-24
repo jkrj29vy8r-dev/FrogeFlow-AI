@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
+import { generateJsonText, extractJsonObject } from "@/lib/ai/generate-json";
 import { buildRegenerateAssetPrompt } from "@/features/projects/lib/generation-prompts";
 import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { checkCredits, deductCredits } from "@/lib/credits";
@@ -7,10 +7,6 @@ import type { AssetType, ProjectInput } from "@/types/projects";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-function stripFences(raw: string): string {
-  return raw.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "");
-}
 
 export async function POST(
   request: Request,
@@ -60,18 +56,11 @@ export async function POST(
   }).from("project_assets").update({ status: "generating", updated_at: new Date().toISOString() }).eq("id", assetId);
 
   try {
-    const anthropic = getAnthropic();
-    const msg = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 4000,
-      messages: [{
-        role: "user",
-        content: buildRegenerateAssetPrompt(project.input, asset.asset_type, instruction),
-      }],
-    });
-    const block = msg.content[0];
-    const rawText = block.type === "text" ? block.text : "";
-    const parsed = JSON.parse(stripFences(rawText)) as Record<string, object>;
+    const rawText = await generateJsonText(
+      buildRegenerateAssetPrompt(project.input, asset.asset_type, instruction),
+      16000
+    );
+    const parsed = JSON.parse(extractJsonObject(rawText)) as Record<string, object>;
     const content = parsed[asset.asset_type] ?? parsed;
 
     await (supabase as never as {

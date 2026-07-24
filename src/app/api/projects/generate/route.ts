@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
+import { generateJsonText, extractJsonObject } from "@/lib/ai/generate-json";
 import { buildPhase1Prompt, buildEmailSequencePrompt } from "@/features/projects/lib/generation-prompts";
 import type { ProjectInput, AssetType } from "@/types/projects";
 import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -28,19 +28,10 @@ function sse(controller: ReadableStreamDefaultController, data: object) {
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
 }
 
-function stripFences(raw: string): string {
-  return raw.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "");
-}
+const stripFences = extractJsonObject;
 
 async function callClaude(prompt: string): Promise<string> {
-  const anthropic = getAnthropic();
-  const msg = await anthropic.messages.create({
-    model: AI_MODEL,
-    max_tokens: 8000,
-    messages: [{ role: "user", content: prompt }],
-  });
-  const block = msg.content[0];
-  return block.type === "text" ? block.text : "";
+  return generateJsonText(prompt);
 }
 
 type SupabaseInsert = {
@@ -188,7 +179,15 @@ export async function POST(request: Request): Promise<Response> {
               await markAsset(assetType, "failed", undefined, "Missing from AI response");
             }
           }
-        } catch {
+        } catch (err) {
+          console.error(
+            "[projects/generate] phase1 JSON parse failed:",
+            err instanceof Error ? err.message : err,
+            "| length:",
+            phase1Raw.length,
+            "| tail:",
+            phase1Raw.slice(-200)
+          );
           for (const assetType of PHASE1_ASSETS) {
             await markAsset(assetType, "failed", undefined, "Failed to parse AI response");
           }
@@ -202,7 +201,15 @@ export async function POST(request: Request): Promise<Response> {
           } else {
             await markAsset(EMAIL_ASSET, "failed", undefined, "Missing from AI response");
           }
-        } catch {
+        } catch (err) {
+          console.error(
+            "[projects/generate] email JSON parse failed:",
+            err instanceof Error ? err.message : err,
+            "| length:",
+            emailRaw.length,
+            "| tail:",
+            emailRaw.slice(-200)
+          );
           await markAsset(EMAIL_ASSET, "failed", undefined, "Failed to parse AI response");
         }
 
