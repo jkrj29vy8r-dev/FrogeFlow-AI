@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { RefreshCw, Zap } from "lucide-react";
+import { RefreshCw, Zap, Download } from "lucide-react";
 import type { ProjectWithAssets, ProjectAsset, AssetType } from "@/types/projects";
 import { GENERATION_ORDER, ASSET_TYPE_LABELS } from "@/types/projects";
 import { AssetCard } from "./asset-card";
+import { assetToMarkdown, downloadTextFile, slugify } from "@/features/projects/lib/asset-to-markdown";
 import { formatRelativeTime } from "@/lib/utils";
 
 interface Props {
@@ -18,6 +19,29 @@ export function ProjectDashboard({ project }: Props) {
   const completedCount = assets.filter(a => a.status === "completed").length;
   const totalCount = GENERATION_ORDER.length;
   const progress = Math.round((completedCount / totalCount) * 100);
+
+  // Bundle every completed text asset into one Markdown document. Landing/sales
+  // pages are skipped — they live in the page editor with their own HTML export.
+  function handleExportAll() {
+    const parts = assets
+      .filter(
+        a =>
+          a.status === "completed" &&
+          a.asset_type !== "landing_page" &&
+          a.asset_type !== "sales_page"
+      )
+      .map(a => assetToMarkdown(a));
+    if (parts.length === 0) return;
+    const doc = `# ${project.name}\n\n${parts.join("\n\n---\n\n")}`;
+    downloadTextFile(doc, `${slugify(project.name)}-assets.md`);
+  }
+
+  const hasDownloadable = assets.some(
+    a =>
+      a.status === "completed" &&
+      a.asset_type !== "landing_page" &&
+      a.asset_type !== "sales_page"
+  );
 
   const handleRegenerate = useCallback(async (assetId: string, assetType: AssetType) => {
     setRegenerating(assetId);
@@ -78,14 +102,25 @@ export function ProjectDashboard({ project }: Props) {
 
       {/* Assets grid */}
       <div>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">Generated Assets</h2>
-          {regenerating && (
-            <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              Regenerating {ASSET_TYPE_LABELS[assets.find(a => a.id === regenerating)?.asset_type ?? "faq"]}...
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {regenerating && (
+              <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                Regenerating {ASSET_TYPE_LABELS[assets.find(a => a.id === regenerating)?.asset_type ?? "faq"]}...
+              </div>
+            )}
+            {hasDownloadable && (
+              <button
+                onClick={handleExportAll}
+                className="flex items-center gap-1.5 rounded-lg bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[hsl(var(--primary)/0.9)]"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export all
+              </button>
+            )}
+          </div>
         </div>
         <div className="space-y-3">
           {orderedAssets.map(asset => (

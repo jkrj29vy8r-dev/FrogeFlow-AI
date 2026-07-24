@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, RefreshCw, Trash2, Eye, Pencil, Copy } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Trash2, Eye, Pencil, Copy, Download, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASSET_TYPE_ICONS, ASSET_TYPE_LABELS } from "@/types/projects";
 import type { ProjectAsset, AssetType } from "@/types/projects";
 import { AssetViewer } from "./asset-viewer";
+import { assetToMarkdown, downloadTextFile, slugify } from "@/features/projects/lib/asset-to-markdown";
 import { deleteAsset, renameAsset } from "@/features/projects/actions/projects.actions";
 
 interface Props {
@@ -26,6 +27,7 @@ export function AssetCard({ asset, onRegenerate }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [nameVal, setNameVal] = useState(asset.name);
+  const [copied, setCopied] = useState(false);
 
   async function handleRename() {
     if (nameVal.trim() && nameVal !== asset.name) {
@@ -33,6 +35,27 @@ export function AssetCard({ asset, onRegenerate }: Props) {
     }
     setRenaming(false);
   }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(assetToMarkdown(asset));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+
+  function handleDownload() {
+    downloadTextFile(assetToMarkdown(asset), `${slugify(asset.name)}.md`);
+  }
+
+  // Landing/sales pages aren't plain text — they open in the page editor, which
+  // has its own HTML export — so Copy/Download only apply to the text assets.
+  const isDownloadable =
+    asset.status === "completed" &&
+    asset.asset_type !== "landing_page" &&
+    asset.asset_type !== "sales_page";
 
   return (
     <>
@@ -85,7 +108,7 @@ export function AssetCard({ asset, onRegenerate }: Props) {
         )}
 
         {/* Action row */}
-        <div className="mt-3 flex items-center gap-1.5">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {asset.status === "completed" && (
             <button
               onClick={() => setOpen(o => !o)}
@@ -94,6 +117,24 @@ export function AssetCard({ asset, onRegenerate }: Props) {
               <Eye className="h-3.5 w-3.5" />
               {open ? "Hide" : "Preview"}
             </button>
+          )}
+          {isDownloadable && (
+            <>
+              <button
+                onClick={handleDownload}
+                className="flex items-center gap-1.5 rounded-lg border border-[hsl(var(--border))] px-2.5 py-1.5 text-xs font-medium hover:bg-[hsl(var(--accent))]"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </button>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 rounded-lg border border-[hsl(var(--border))] px-2.5 py-1.5 text-xs font-medium hover:bg-[hsl(var(--accent))]"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </>
           )}
           {(asset.status === "completed" || asset.status === "failed") && (
             <button
