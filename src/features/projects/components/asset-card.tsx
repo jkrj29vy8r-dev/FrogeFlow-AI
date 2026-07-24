@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ASSET_TYPE_ICONS, ASSET_TYPE_LABELS } from "@/types/projects";
 import type { ProjectAsset, AssetType } from "@/types/projects";
 import { AssetViewer } from "./asset-viewer";
-import { assetToMarkdown, downloadTextFile, slugify } from "@/features/projects/lib/asset-to-markdown";
+import { assetToMarkdown, downloadHtmlFile, markdownToHtmlDocument, slugify } from "@/features/projects/lib/asset-to-markdown";
 import { deleteAsset, renameAsset } from "@/features/projects/actions/projects.actions";
 
 interface Props {
@@ -48,7 +48,8 @@ export function AssetCard({ asset, onRegenerate }: Props) {
 
   function handleDownload() {
     try {
-      downloadTextFile(assetToMarkdown(asset), `${slugify(asset.name)}.md`);
+      const html = markdownToHtmlDocument(asset.name, assetToMarkdown(asset));
+      downloadHtmlFile(html, `${slugify(asset.name)}.html`);
     } catch (err) {
       console.error("Download failed", err);
       alert("Something went wrong while downloading. Please try again.");

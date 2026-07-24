@@ -15,6 +15,7 @@ import type {
   DownloadPageContent,
 } from "@/types/projects";
 import { ASSET_TYPE_LABELS } from "@/types/projects";
+import { markdownToHtml } from "@/lib/markdown";
 
 // Normalizes any value into an array so `.map`/`.flatMap` never throws when the
 // AI returns a malformed shape (a string or object where a list was expected).
@@ -234,7 +235,11 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
 
 // Triggers a browser download of `text` as a file named `filename`.
 export function downloadTextFile(text: string, filename: string) {
-  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  triggerDownload(text, filename, "text/markdown;charset=utf-8");
+}
+
+function triggerDownload(data: string, filename: string, mime: string) {
+  const blob = new Blob([data], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -243,6 +248,73 @@ export function downloadTextFile(text: string, filename: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Wraps markdown-rendered HTML in a clean, self-contained, printable document
+// so a downloaded file opens beautifully in any browser or phone instead of
+// showing raw `#`/`##` markdown symbols as plain text.
+export function markdownToHtmlDocument(title: string, markdown: string): string {
+  const body = markdownToHtml(markdown);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(title)}</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65; color: #1a1a2e; background: #ffffff;
+    max-width: 780px; margin: 0 auto; padding: 48px 24px 96px;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 2.2rem 0 1rem; letter-spacing: -0.02em; }
+  h1:first-child { margin-top: 0; }
+  h2 { font-size: 1.4rem; margin: 2rem 0 0.8rem; letter-spacing: -0.01em; }
+  h3 { font-size: 1.12rem; margin: 1.6rem 0 0.6rem; }
+  p { margin: 0.7rem 0; }
+  ul, ol { margin: 0.7rem 0; padding-left: 1.4rem; }
+  li { margin: 0.3rem 0; }
+  a { color: #6d28d9; }
+  blockquote {
+    margin: 1rem 0; padding: 0.4rem 1rem; border-left: 3px solid #a78bfa;
+    background: rgba(167,139,250,0.08); border-radius: 0 8px 8px 0;
+  }
+  code { background: rgba(0,0,0,0.06); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+  pre { background: rgba(0,0,0,0.05); padding: 1rem; border-radius: 8px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  hr { border: none; border-top: 1px solid rgba(0,0,0,0.1); margin: 2.5rem 0; }
+  em { color: #4b5563; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid rgba(0,0,0,0.12); padding: 0.5rem 0.7rem; text-align: left; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e5e7eb; background: #0f0f1a; }
+    a { color: #a78bfa; }
+    em { color: #9ca3af; }
+    code, pre { background: rgba(255,255,255,0.08); }
+    blockquote { background: rgba(167,139,250,0.12); }
+    hr, th, td { border-color: rgba(255,255,255,0.14); }
+  }
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+}
+
+// Triggers a browser download of a full HTML document named `filename`.
+export function downloadHtmlFile(html: string, filename: string) {
+  triggerDownload(html, filename, "text/html;charset=utf-8");
 }
 
 export function slugify(name: string): string {

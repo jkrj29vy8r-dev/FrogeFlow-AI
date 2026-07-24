@@ -5,7 +5,7 @@ import { RefreshCw, Zap, Download } from "lucide-react";
 import type { ProjectWithAssets, ProjectAsset, AssetType } from "@/types/projects";
 import { GENERATION_ORDER, ASSET_TYPE_LABELS } from "@/types/projects";
 import { AssetCard } from "./asset-card";
-import { assetToMarkdown, downloadTextFile, slugify } from "@/features/projects/lib/asset-to-markdown";
+import { assetToMarkdown, downloadHtmlFile, markdownToHtmlDocument, slugify } from "@/features/projects/lib/asset-to-markdown";
 import { formatRelativeTime } from "@/lib/utils";
 
 interface Props {
@@ -33,8 +33,9 @@ export function ProjectDashboard({ project }: Props) {
         )
         .map(a => assetToMarkdown(a));
       if (parts.length === 0) return;
-      const doc = `# ${project.name}\n\n${parts.join("\n\n---\n\n")}`;
-      downloadTextFile(doc, `${slugify(project.name)}-assets.md`);
+      const markdown = `# ${project.name}\n\n${parts.join("\n\n---\n\n")}`;
+      const html = markdownToHtmlDocument(project.name, markdown);
+      downloadHtmlFile(html, `${slugify(project.name)}-assets.html`);
     } catch (err) {
       console.error("Export all failed", err);
       alert("Something went wrong while exporting. Please try again.");
