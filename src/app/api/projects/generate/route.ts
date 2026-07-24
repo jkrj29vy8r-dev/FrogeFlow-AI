@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { generateJsonText, extractJsonObject } from "@/lib/ai/generate-json";
 import { buildPhase1Prompt, buildEmailSequencePrompt } from "@/features/projects/lib/generation-prompts";
+import { buildLandingPagePrompt } from "@/features/landing-pages/lib/prompts";
+import { DEFAULT_SECTIONS_BY_TYPE } from "@/types/landing-pages";
+import type { LandingPageInput } from "@/types/landing-pages";
 import type { ProjectInput, AssetType } from "@/types/projects";
 import { generationRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { checkCredits, deductCredits } from "@/lib/credits";
@@ -220,6 +223,20 @@ export async function POST(request: Request): Promise<Response> {
           await markAsset(pageAsset, "generating");
           try {
             const pageType = pageAsset === "landing_page" ? "landing" : "sales";
+            const lpInput = {
+              pageType,
+              productName: input.brandName,
+              description: input.productIdea,
+              targetAudience: input.targetAudience,
+              industry: input.industry,
+              tone: input.tone,
+              framework: "AIDA",
+              primaryColor: input.primaryColor,
+              secondaryColor: input.secondaryColor,
+              logoUrl: input.logoUrl,
+              cta: "Get Started Now",
+            } as unknown as LandingPageInput;
+
             const { data: lp } = await (supabase as never as {
               from: (t: string) => { insert: (d: object) => { select: (s: string) => { single: () => Promise<{ data: { id: string } | null }> } } }
             }).from("landing_pages").insert({
@@ -227,36 +244,65 @@ export async function POST(request: Request): Promise<Response> {
               name: `${input.brandName} — ${pageType === "landing" ? "Landing" : "Sales"} Page`,
               page_type: pageType,
               status: "draft",
-              input: {
-                pageType,
-                productName: input.brandName,
-                description: input.productIdea,
-                targetAudience: input.targetAudience,
-                industry: input.industry,
-                tone: input.tone,
-                framework: "AIDA",
-                primaryColor: input.primaryColor,
-                secondaryColor: input.secondaryColor,
-                cta: "Get Started Now",
-              },
-              settings: { primaryColor: input.primaryColor, secondaryColor: input.secondaryColor },
+              input: lpInput,
+              settings: { primaryColor: input.primaryColor, secondaryColor: input.secondaryColor, fontFamily: "system-ui" },
             }).select("id").single();
 
-            if (lp?.id) {
-              const assetId = assetIdMap[pageAsset];
-              if (assetId) {
-                await (supabase as never as {
-                  from: (t: string) => { update: (d: object) => { eq: (a: string, b: string) => Promise<unknown> } }
-                }).from("project_assets").update({
-                  status: "completed",
-                  landing_page_id: lp.id,
-                  content: { landing_page_id: lp.id },
-                  updated_at: new Date().toISOString(),
-                }).eq("id", assetId);
-                sse(controller, { type: "asset_update", assetType: pageAsset, status: "completed", assetId, landingPageId: lp.id });
-              }
-            } else {
+            if (!lp?.id) {
               await markAsset(pageAsset, "failed", undefined, "Failed to create page");
+              continue;
+            }
+
+            // Generate the page's actual sections with AI — without this the
+            // page opens empty ("No sections yet") in the editor.
+            let seo: Record<string, unknown> | undefined;
+            let generatedSections: { section_type: string; content: Record<string, unknown> }[] = [];
+            try {
+              const raw = await callClaude(buildLandingPagePrompt(lpInput));
+              const parsedPage = JSON.parse(stripFences(raw)) as {
+                seo?: Record<string, unknown>;
+                sections?: { section_type: string; content: Record<string, unknown> }[];
+              };
+              seo = parsedPage.seo;
+              generatedSections = parsedPage.sections ?? [];
+            } catch (e) {
+              console.error(`[projects/generate] ${pageAsset} section parse failed:`, e);
+            }
+
+            const expectedSections = DEFAULT_SECTIONS_BY_TYPE[pageType];
+            const sectionInserts = expectedSections.map((sectionType, position) => {
+              const found = generatedSections.find((s) => s.section_type === sectionType);
+              return {
+                page_id: lp.id,
+                user_id: user.id,
+                section_type: sectionType,
+                position,
+                is_visible: true,
+                content: found?.content ?? {},
+              };
+            });
+
+            await (supabase as never as {
+              from: (t: string) => { insert: (d: object) => Promise<unknown> }
+            }).from("landing_page_sections").insert(sectionInserts);
+
+            if (seo) {
+              await (supabase as never as {
+                from: (t: string) => { update: (d: object) => { eq: (a: string, b: string) => Promise<unknown> } }
+              }).from("landing_pages").update({ seo, updated_at: new Date().toISOString() }).eq("id", lp.id);
+            }
+
+            const assetId = assetIdMap[pageAsset];
+            if (assetId) {
+              await (supabase as never as {
+                from: (t: string) => { update: (d: object) => { eq: (a: string, b: string) => Promise<unknown> } }
+              }).from("project_assets").update({
+                status: "completed",
+                landing_page_id: lp.id,
+                content: { landing_page_id: lp.id },
+                updated_at: new Date().toISOString(),
+              }).eq("id", assetId);
+              sse(controller, { type: "asset_update", assetType: pageAsset, status: "completed", assetId, landingPageId: lp.id });
             }
           } catch {
             await markAsset(pageAsset, "failed", undefined, "Unexpected error");
