@@ -16,15 +16,27 @@ import type {
 } from "@/types/projects";
 import { ASSET_TYPE_LABELS } from "@/types/projects";
 
+// Normalizes any value into an array so `.map`/`.flatMap` never throws when the
+// AI returns a malformed shape (a string or object where a list was expected).
+function arr<T>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+
 // Turns a generated asset's structured content into readable Markdown so it can
 // be copied to the clipboard or downloaded as a .md file. Falls back to pretty
-// JSON for anything without a dedicated formatter.
+// JSON for anything without a dedicated formatter. Never throws — a malformed
+// asset degrades to a JSON dump instead of crashing the export.
 export function assetToMarkdown(asset: ProjectAsset): string {
   const c = asset.content as Record<string, unknown> | null;
   if (!c) return `# ${asset.name}\n\n_(No content)_\n`;
 
   const title = `# ${asset.name}\n_${ASSET_TYPE_LABELS[asset.asset_type as AssetType] ?? asset.asset_type}_\n`;
-  const body = formatBody(asset.asset_type as AssetType, c);
+  let body: string;
+  try {
+    body = formatBody(asset.asset_type as AssetType, c);
+  } catch {
+    body = "```json\n" + JSON.stringify(c, null, 2) + "\n```";
+  }
   return `${title}\n${body}\n`;
 }
 
@@ -43,7 +55,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
         c.longDescription ?? "",
         "",
         "### Key Benefits",
-        ...(c.bulletPoints ?? []).map((b) => `- ${b}`),
+        ...arr<string>(c.bulletPoints).map((b) => `- ${b}`),
         "",
         "### Unique Value Proposition",
         c.uniqueValueProp ?? "",
@@ -59,7 +71,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
         `- **Twitter Title:** ${c.twitterTitle ?? ""}`,
         `- **Twitter Description:** ${c.twitterDescription ?? ""}`,
         "",
-        `**Keywords:** ${(c.keywords ?? []).join(", ")}`,
+        `**Keywords:** ${arr<string>(c.keywords).join(", ")}`,
       ].join("\n");
     }
     case "ebook_outline": {
@@ -71,10 +83,10 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
         "### Introduction",
         c.introduction ?? "",
         "",
-        ...(c.chapters ?? []).flatMap((ch) => [
+        ...arr<EbookOutlineContent["chapters"][number]>(c.chapters).flatMap((ch) => [
           `### Chapter ${ch.number}: ${ch.title}`,
           ch.description ?? "",
-          ...(ch.keyPoints ?? []).map((kp) => `- ${kp}`),
+          ...arr<string>(ch.keyPoints).map((kp) => `- ${kp}`),
           "",
         ]),
         "### Call to Action",
@@ -87,11 +99,11 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
         `## ${c.title ?? ""}`,
         c.introduction ?? "",
         "",
-        ...(c.modules ?? []).flatMap((m) => [
+        ...arr<WorkbookContent["modules"][number]>(c.modules).flatMap((m) => [
           `### ${m.title}`,
           `_${m.objective ?? ""}_`,
           "",
-          ...(m.exercises ?? []).flatMap((ex) => [
+          ...arr<WorkbookContent["modules"][number]["exercises"][number]>(m.exercises).flatMap((ex) => [
             `**${ex.title}**`,
             ex.prompt ?? "",
             "",
@@ -105,9 +117,9 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
         `## ${c.title ?? ""}`,
         c.description ?? "",
         "",
-        ...(c.sections ?? []).flatMap((s) => [
+        ...arr<ChecklistContent["sections"][number]>(c.sections).flatMap((s) => [
           `### ${s.title}`,
-          ...(s.items ?? []).map(
+          ...arr<ChecklistContent["sections"][number]["items"][number]>(s.items).map(
             (it) => `- [ ] ${it.text}${it.note ? ` — _${it.note}_` : ""}`
           ),
           "",
@@ -122,7 +134,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
         "",
         `> ${c.hook ?? ""}`,
         "",
-        ...(c.sections ?? []).flatMap((s) => [
+        ...arr<LeadMagnetContent["sections"][number]>(c.sections).flatMap((s) => [
           `### ${s.heading}`,
           s.content ?? "",
           s.tip ? `\n💡 _${s.tip}_` : "",
@@ -133,7 +145,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
     }
     case "email_sequence": {
       const c = raw as unknown as EmailSequenceContent;
-      return (c.emails ?? [])
+      return arr<EmailSequenceContent["emails"][number]>(c.emails)
         .map((e, i) =>
           [
             `## Email ${i + 1}: ${e.subject}`,
@@ -148,7 +160,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
     }
     case "social_media_pack": {
       const c = raw as unknown as SocialMediaPackContent;
-      return (c.posts ?? [])
+      return arr<SocialMediaPackContent["posts"][number]>(c.posts)
         .map((p) =>
           [
             `## ${p.platform}`,
@@ -156,7 +168,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
             "",
             p.caption ?? "",
             "",
-            (p.hashtags ?? []).map((h) => `#${h}`).join(" "),
+            arr<string>(p.hashtags).map((h) => `#${h}`).join(" "),
           ].join("\n")
         )
         .join("\n\n---\n\n");
@@ -175,13 +187,13 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
     }
     case "faq": {
       const c = raw as unknown as FaqContent;
-      return (c.items ?? [])
+      return arr<FaqContent["items"][number]>(c.items)
         .map((it) => `### ${it.question}\n${it.answer ?? ""}`)
         .join("\n\n");
     }
     case "cta_pack": {
       const c = raw as unknown as CtaPackContent;
-      return (c.ctas ?? [])
+      return arr<CtaPackContent["ctas"][number]>(c.ctas)
         .map((cta) =>
           [
             `### ${cta.context}`,
@@ -212,7 +224,7 @@ function formatBody(type: AssetType, raw: Record<string, unknown>): string {
             ]
           : []),
         "### Next Steps",
-        ...(c.nextSteps ?? []).map((s, i) => `${i + 1}. ${s}`),
+        ...arr<string>(c.nextSteps).map((s, i) => `${i + 1}. ${s}`),
       ].join("\n");
     }
     default:

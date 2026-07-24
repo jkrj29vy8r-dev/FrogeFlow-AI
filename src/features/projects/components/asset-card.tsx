@@ -47,7 +47,12 @@ export function AssetCard({ asset, onRegenerate }: Props) {
   }
 
   function handleDownload() {
-    downloadTextFile(assetToMarkdown(asset), `${slugify(asset.name)}.md`);
+    try {
+      downloadTextFile(assetToMarkdown(asset), `${slugify(asset.name)}.md`);
+    } catch (err) {
+      console.error("Download failed", err);
+      alert("Something went wrong while downloading. Please try again.");
+    }
   }
 
   // Landing/sales pages aren't plain text — they open in the page editor, which

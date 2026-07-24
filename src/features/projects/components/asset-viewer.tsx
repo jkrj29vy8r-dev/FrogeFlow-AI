@@ -1,5 +1,6 @@
 "use client";
 
+import { Component, type ReactNode } from "react";
 import type { ProjectAsset, AssetType } from "@/types/projects";
 import type {
   EbookOutlineContent, WorkbookContent, ChecklistContent, LeadMagnetContent,
@@ -13,7 +14,43 @@ interface Props {
   asset: ProjectAsset;
 }
 
+// A malformed AI response (a field that should be a list arriving as a string,
+// a missing nested object) would otherwise throw during render and take down
+// the whole page via the route error boundary. Catch it here and degrade to a
+// readable JSON dump so the rest of the project stays usable.
+class ViewerErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
 export function AssetViewer({ asset }: Props) {
+  return (
+    <ViewerErrorBoundary
+      fallback={
+        <div className="space-y-2">
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            This asset couldn&apos;t be displayed in the formatted view. Showing the raw content:
+          </p>
+          <pre className="overflow-auto rounded-lg bg-[hsl(var(--muted))] p-3 text-xs">
+            {JSON.stringify(asset.content, null, 2)}
+          </pre>
+        </div>
+      }
+    >
+      <AssetViewerInner asset={asset} />
+    </ViewerErrorBoundary>
+  );
+}
+
+function AssetViewerInner({ asset }: Props) {
   if (!asset.content) {
     return <p className="text-sm text-[hsl(var(--muted-foreground))]">No content available.</p>;
   }

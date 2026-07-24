@@ -23,17 +23,22 @@ export function ProjectDashboard({ project }: Props) {
   // Bundle every completed text asset into one Markdown document. Landing/sales
   // pages are skipped — they live in the page editor with their own HTML export.
   function handleExportAll() {
-    const parts = assets
-      .filter(
-        a =>
-          a.status === "completed" &&
-          a.asset_type !== "landing_page" &&
-          a.asset_type !== "sales_page"
-      )
-      .map(a => assetToMarkdown(a));
-    if (parts.length === 0) return;
-    const doc = `# ${project.name}\n\n${parts.join("\n\n---\n\n")}`;
-    downloadTextFile(doc, `${slugify(project.name)}-assets.md`);
+    try {
+      const parts = assets
+        .filter(
+          a =>
+            a.status === "completed" &&
+            a.asset_type !== "landing_page" &&
+            a.asset_type !== "sales_page"
+        )
+        .map(a => assetToMarkdown(a));
+      if (parts.length === 0) return;
+      const doc = `# ${project.name}\n\n${parts.join("\n\n---\n\n")}`;
+      downloadTextFile(doc, `${slugify(project.name)}-assets.md`);
+    } catch (err) {
+      console.error("Export all failed", err);
+      alert("Something went wrong while exporting. Please try again.");
+    }
   }
 
   const hasDownloadable = assets.some(
