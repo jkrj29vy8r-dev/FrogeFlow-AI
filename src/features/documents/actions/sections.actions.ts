@@ -122,10 +122,17 @@ export async function updateDocumentStatus(
 // actually cost 1 outline + 1 flat + 5 per-section = 7 credits, more than
 // the entire Free plan's starting balance). Each section's own request
 // already checks and deducts its own credit, so this is now a read-only
-// upfront check so the UI can fail fast with a clear message instead of
-// silently failing section-by-section once credits run out mid-run.
+// upfront check.
+//
+// It verifies the balance covers EVERY section up front (requiredCredits),
+// not just one. Otherwise a Free user with, say, 1 credit and an 8-section
+// eBook would generate exactly the first section, then watch the other 7
+// fail one-by-one with "insufficient credits" — the confusing "7 of 8
+// sections failed" screen. Checking the whole run first lets us stop before
+// generating anything and tell the user exactly how many credits they need.
 export async function deductGenerationCredit(
-  _documentId: string
+  _documentId: string,
+  requiredCredits = 1
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -139,7 +146,17 @@ export async function deductGenerationCredit(
 
   if (!profile) return { error: "Unauthorized" };
   if (profile.plan === "pro" || profile.plan === "agency") return {};
-  if ((profile.credits as number) < 1) return { error: "Insufficient credits" };
+
+  const credits = (profile.credits as number) ?? 0;
+  const needed = Math.max(1, requiredCredits);
+  if (credits < needed) {
+    return {
+      error:
+        needed === 1
+          ? "You're out of credits. Top up your credits to generate content."
+          : `This eBook needs ${needed} credits to write all its sections, but you have ${credits}. Top up your credits and try again.`,
+    };
+  }
 
   return {};
 }

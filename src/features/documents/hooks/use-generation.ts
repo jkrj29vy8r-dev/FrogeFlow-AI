@@ -191,29 +191,37 @@ export function useGeneration(
 
   const generateContent = useCallback(
     async (sectionsToGenerate: Section[]) => {
-      // Deduct 1 credit before starting
-      const creditResult = await deductGenerationCredit(documentId);
-      if (creditResult.error) {
-        setError(creditResult.error);
-        return;
-      }
-
-      setPhase("generating_content");
-      setError(null);
-      setIsCancelling(false);
-      cancelledRef.current = false;
-      await updateDocumentStatus(documentId, "generating_content");
-
-      // Initialize progress
-      const progress: SectionProgress[] = sectionsToGenerate.map((s) => ({
-        sectionId: s.id,
-        title: s.title,
-        status: "pending",
-        content: s.content,
-      }));
-      setSectionProgress(progress);
-
       const action = async () => {
+        // Verify the balance covers every section up front, so we fail fast
+        // with a clear message instead of generating the first section and
+        // letting the rest fail one-by-one once credits run out mid-run.
+        // This lives inside `action` so the failure screen's "Try again"
+        // (which re-runs lastActionRef) re-checks credits after a top-up.
+        const creditResult = await deductGenerationCredit(
+          documentId,
+          sectionsToGenerate.length
+        );
+        if (creditResult.error) {
+          setError(creditResult.error);
+          setPhase("failed");
+          return;
+        }
+
+        setPhase("generating_content");
+        setError(null);
+        setIsCancelling(false);
+        cancelledRef.current = false;
+        await updateDocumentStatus(documentId, "generating_content");
+
+        // Initialize progress
+        const progress: SectionProgress[] = sectionsToGenerate.map((s) => ({
+          sectionId: s.id,
+          title: s.title,
+          status: "pending",
+          content: s.content,
+        }));
+        setSectionProgress(progress);
+
         try {
           let failedCount = 0;
 
