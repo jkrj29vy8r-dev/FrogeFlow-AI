@@ -230,8 +230,8 @@ function renderTestimonialsHtml(c: TestimonialsContent): string {
 
 function renderPricingHtml(c: PricingContent, _primary: string): string {
   const plans = (c.plans ?? []).map(p => `
-    <div class="card" style="${p.highlighted ? 'border-color:var(--primary);border-width:2px;position:relative' : ''}">
-      ${p.badge ? `<span class="badge" style="position:absolute;top:-14px;left:50%;transform:translateX(-50%)">${escHtml(p.badge)}</span>` : ''}
+    <div class="card" style="${p.highlighted ? 'border-color:var(--primary);border-width:2px;position:relative;padding-top:40px;overflow:visible' : ''}">
+      ${p.badge ? `<span class="badge" style="position:absolute;top:0;left:50%;transform:translate(-50%,-50%);margin:0;z-index:1;white-space:nowrap;background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)">${escHtml(p.badge)}</span>` : ''}
       <h3 style="font-size:1.25rem">${escHtml(p.name)}</h3>
       <div style="margin:16px 0"><span style="font-size:2.5rem;font-weight:800">${escHtml(p.price)}</span><span style="color:#6b7280">${escHtml(p.period)}</span></div>
       <p style="margin-bottom:20px">${escHtml(p.description)}</p>
